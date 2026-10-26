@@ -169,6 +169,22 @@ Cada arquivo disponível (baixado ou reutilizado) vira uma camada raster separad
 estão no projeto (mesmo caminho) não são adicionados de novo. Arquivos que o GDAL não abre
 são listados na tabela com o motivo. Nada é alterado nos rasters.
 
+Os produtos classificados do INPE (SA, SB, SC, V3, V5, H3, H5, OC, FT, DD) trazem uma tabela
+de cores em cinza quase preto (valor v → cinza v−1) e aparecem pretos no QGIS. Ao carregar,
+o plugin aplica um estilo de camada com uma cor por classe (`styles.py`); o arquivo não é
+alterado. Classes conferidas nos dados: SA 1–4, SB 1–7, SC 1–6, V3/H3 1–3, V5/H5 1–5,
+OC 1–8, FT 1–9, DD 1–16 + 17–18 (linhas).
+
+## Documentação (site)
+
+`docs/index.html` (GitHub Pages), no mesmo formato do site do `osmnx-routing-isochrones`.
+As figuras são feitas pelo próprio plugin num QGIS headless, com dados reais do INPE (precisa
+de internet; perfil do QGIS temporário):
+
+```bash
+QT_QPA_PLATFORM=offscreen <python do QGIS> scripts/build_docs_figures.py
+```
+
 ## Estrutura
 
 ```
@@ -179,12 +195,14 @@ topodata_downloader/        o plugin (esta pasta vai no ZIP)
   map_tool.py               ferramenta de retângulo no mapa
   tasks.py                  QgsTask de consulta de tamanhos e de download; proxy do QGIS
   loader.py                 carregamento das camadas raster
+  styles.py                 cores por classe dos produtos classificados
   dialog.py                 diálogo (configuração / execução)
   plugin.py                 botão, menu e ligação entre ferramenta e diálogo
   compat.py                 enums compatíveis com Qt5 (QGIS 3) e Qt6 (QGIS 4)
   data/grade_topodata.geojson
 tests/                      test_core.py (sem QGIS), test_qgis.py e test_plugin.py (QGIS headless)
-scripts/make_zip.py
+scripts/make_zip.py, build_docs_figures.py
+docs/                       site de documentação (GitHub Pages)
 ```
 
 Padrões seguidos do `osmnx-routing-isochrones` (mesmo autor): núcleo em Python puro testável
@@ -215,7 +233,7 @@ parte (`pip install --target <pasta> pytest`) adicionada ao `PYTHONPATH`.
 
 ### Resultado (26/10/2026, QGIS 3.44.8, Qt 5.15.18, Python 3.12.11, macOS)
 
-`67 passed` (37 em `test_core.py`, 25 em `test_qgis.py`, 5 em `test_plugin.py`), em duas execuções seguidas; `flake8
+`68 passed` (37 em `test_core.py`, 26 em `test_qgis.py`, 5 em `test_plugin.py`); `flake8
 --max-line-length 110` sem avisos; `compileall` com Python 3.8 sem erros.
 
 | Requisito | Teste |
@@ -231,7 +249,7 @@ parte (`pip install --target <pasta> pytest`) adicionada ao `PYTHONPATH`.
 | 9. Falha de rede, repetição limitada, cancelamento | `test_temporary_failure_is_retried_then_succeeds`, `test_retries_are_limited`, `test_http_404_is_not_retried`, `test_unreachable_server_message`, `test_cancel_*`, `test_dialog_cancel` |
 | 10. Parcial preexistente, retomada/reinício seguro | `test_connection_drop_resumes_with_validated_range`, `test_existing_partial_is_resumed_on_restart`, `test_partial_of_changed_file_restarts_from_zero`, `test_partial_without_validator_is_discarded`, `test_inconsistent_content_range_is_not_concatenated`, `test_server_without_range_support_restarts_safely` |
 | 11. Completos não corrompidos por cancelamento | `test_cancel_does_not_touch_completed_files`, `test_dialog_cancel`, `test_existing_file_is_kept_when_replacement_fails` |
-| 12. Carregamento sem mosaico/recorte | `test_dialog_download_load_and_responsive_ui` (4 camadas separadas, extensão e tamanho originais, sem duplicar), `test_loader_reports_unreadable_and_missing` |
+| 12. Carregamento sem mosaico/recorte | `test_dialog_download_load_and_responsive_ui` (4 camadas separadas, extensão e tamanho originais, sem duplicar), `test_loader_reports_unreadable_and_missing`, `test_classified_products_get_class_colors` (estilo sem alterar o arquivo) |
 | 13. Interface responsiva | `test_dialog_download_load_and_responsive_ui` (timer de 20 ms na thread da interface sem intervalos > 0,5 s durante o download) |
 | 14. Falha parcial sem falso sucesso | `test_dialog_partial_failure_summary` |
 

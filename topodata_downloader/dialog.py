@@ -14,7 +14,7 @@ import os
 
 from qgis.PyQt.QtCore import QTimer, QUrl, pyqtSignal
 from qgis.PyQt.QtGui import QDesktopServices
-from qgis.PyQt.QtWidgets import (QApplication, QDialog, QDialogButtonBox,
+from qgis.PyQt.QtWidgets import (QApplication, QDialog,
                                  QFormLayout, QGroupBox, QHBoxLayout, QLabel, QListWidget,
                                  QListWidgetItem, QMessageBox, QPlainTextEdit, QProgressBar,
                                  QPushButton, QScrollArea, QStackedWidget, QTableWidget,
@@ -25,7 +25,7 @@ from qgis.gui import QgsFileWidget
 
 from . import catalog as C
 from . import downloader as D
-from .compat import (ALIGN_RIGHT, ALIGN_VCENTER, BUTTON_CLOSE, CHECKED, DIRECTORY_MODE,
+from .compat import (ALIGN_RIGHT, ALIGN_VCENTER, CHECKED, DIRECTORY_MODE,
                      ITEM_CHECKABLE, ITEM_ENABLED, ITEM_SELECTABLE, MB_NO, MB_YES, NO_EDIT,
                      PLAIN_TEXT, RESIZE_TO_CONTENTS, SELECT_ROWS, SINGLE_SELECTION, STRETCH,
                      TEXT_KEYBOARD, TEXT_SELECTABLE, UNCHECKED, USER_ROLE)
@@ -340,9 +340,10 @@ class DownloadDialog(QDialog):
         for b in (self.cancel_button, self.open_button, self.load_button, self.back_button):
             row.addWidget(b)
         row.addStretch(1)
-        bb = QDialogButtonBox(BUTTON_CLOSE)
-        bb.rejected.connect(self.close)
-        row.addWidget(bb)
+        close = QPushButton("Fechar")
+        close.setAutoDefault(False)
+        close.clicked.connect(self.close)
+        row.addWidget(close)
         lay.addLayout(row)
         return page
 

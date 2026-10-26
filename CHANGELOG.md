@@ -3,6 +3,13 @@
 O formato segue [Keep a Changelog](https://keepachangelog.com/) e o projeto usa
 [Versionamento Semântico](https://semver.org/).
 
+## Não lançado
+
+- Produtos classificados recebem cores por classe ao carregar (a tabela de cores dos arquivos
+  do INPE é cinza quase preta); os arquivos não são alterados.
+- Botão "Fechar" da página de execução sempre em português (antes seguia o idioma do Qt).
+- Site de documentação em `docs/` com figuras geradas pelo plugin a partir de dados reais.
+
 ## 0.1.0 - 2026-10-26
 
 - Versão inicial de desenvolvimento.

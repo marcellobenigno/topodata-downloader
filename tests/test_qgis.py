@@ -463,6 +463,32 @@ def test_loader_reports_unreadable_and_missing(tmp_path):
     assert layer.source() == str(good)
 
 
+def test_classified_products_get_class_colors(tmp_path):
+    """A tabela de cores do INPE é cinza quase preto; o loader aplica cores por classe sem
+    alterar o arquivo."""
+    from qgis.core import QgsPalettedRasterRenderer
+    from topodata_downloader.styles import CLASS_COLORS
+    path = tmp_path / "07S36_SA.tif"
+    path.write_bytes(geotiff_bytes(-36.0, -7.0))
+    before = path.read_bytes()
+    project = QgsProject()
+    zn = tmp_path / "07S36_ZN.tif"
+    zn.write_bytes(geotiff_bytes(-36.0, -7.0))
+    add_rasters([str(path), str(zn)], project)
+    by_name = {lyr.name(): lyr for lyr in project.mapLayers().values()}
+    sa = by_name["07S36_SA — Decliv. (A)"]
+    assert isinstance(sa.renderer(), QgsPalettedRasterRenderer)
+    classes = sa.renderer().classes()
+    assert [c.value for c in classes] == [1, 2, 3, 4]
+    assert len({c.color.name() for c in classes}) == 4
+    assert all(c.color.lightness() > 40 for c in classes)          # nada de quase preto
+    assert not isinstance(by_name["07S36_ZN — Altitude"].renderer(), QgsPalettedRasterRenderer)
+    assert path.read_bytes() == before                               # arquivo intacto
+    assert {k: len(v) for k, v in CLASS_COLORS.items()} == {
+        "SA": 4, "SB": 7, "SC": 6, "V3": 3, "V5": 5, "H3": 3, "H5": 5, "OC": 8, "FT": 9,
+        "DD": 18}
+
+
 def test_product_catalog_matches_dialog_list(setup):
     grid, project, dest = setup
     dlg = make_dialog(grid, project, dest)

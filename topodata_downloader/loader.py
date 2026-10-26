@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 """Carrega os GeoTIFF baixados como camadas raster separadas, sem mosaico, recorte nem
-reprojeção. Arquivos já presentes no projeto (mesmo caminho) não são duplicados."""
+reprojeção. Arquivos já presentes no projeto (mesmo caminho) não são duplicados. Produtos
+classificados recebem cores por classe (só o estilo da camada; ver styles.py)."""
 import os
 
 from qgis.core import QgsProject, QgsRasterLayer
 
 from .catalog import PRODUCT_BY_CODE
+from .styles import apply_class_style
 
 GROUP = "TOPODATA"
 
@@ -48,6 +50,7 @@ def add_rasters(paths, project=None, group_name=GROUP):
             reason = layer.error().summary() or "formato não reconhecido"
             failed.append((path, "O QGIS/GDAL não conseguiu abrir o arquivo: {}".format(reason)))
             continue
+        apply_class_style(layer)
         if group is None:
             root = project.layerTreeRoot()
             group = root.findGroup(group_name) or root.insertGroup(0, group_name)

@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="pt-br" data-copy="Copiar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOPODATA Downloader — plugin para QGIS</title>
+<meta name="description" content="Plugin do QGIS que baixa, por seleção retangular no mapa, os produtos TOPODATA do INPE (altitude, declividade, curvaturas, orientação, forma de terreno, relevo sombreado e divisores) das folhas que intersectam a área.">
+<meta property="og:title" content="TOPODATA Downloader — plugin para QGIS">
+<meta property="og:description" content="Desenhe um retângulo no mapa e baixe os GeoTIFF originais do TOPODATA (INPE), com contagem, tamanho exato, download seguro e carregamento no QGIS.">
+<meta property="og:image" content="assets/img/hero.jpg">
+<link rel="icon" href="assets/icon.svg">
+<link rel="stylesheet" href="assets/style.css">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>tailwind.config = { corePlugins: { preflight: false } };  // mantém os estilos base de style.css</script>
+</head>
+<body>
+<header class="topbar"><div class="wrap">
+  <a class="brand min-w-0" href="#top"><img class="shrink-0" src="assets/icon.svg" alt=""><span class="truncate">TOPODATA Downloader</span></a>
+  <nav class="topnav hidden xl:flex items-center gap-4 ml-auto"><a href="#visao-geral">Visão geral</a><a href="#instalacao">Instalação</a><a href="#primeiros-passos">Primeiros passos</a><a href="#produtos">Produtos</a><a href="#como-funciona">Como funciona</a><a href="#ajuda">Ajuda</a><a href="#dados">Dados</a><a href="#autor">Autor</a></nav>
+  <button class="menu-btn xl:hidden shrink-0 ml-auto" type="button" aria-controls="mobile-nav"
+    aria-expanded="false" aria-label="Menu">
+    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+</div>
+<nav id="mobile-nav" class="topnav mobile-nav hidden xl:hidden">
+  <div class="wrap flex flex-col py-2"><a href="#visao-geral">Visão geral</a><a href="#instalacao">Instalação</a><a href="#primeiros-passos">Primeiros passos</a><a href="#produtos">Produtos</a><a href="#como-funciona">Como funciona</a><a href="#ajuda">Ajuda</a><a href="#dados">Dados</a><a href="#autor">Autor</a></div>
+</nav></header>
+
+<div class="hero" id="top"><div class="wrap">
+  <div>
+    <div class="badges"><span>QGIS 3.28+ (testado no 3.44)</span><span>16 produtos · 556 folhas</span><span>Interface PT-BR</span><span>GPL-2.0</span></div>
+    <h1>O relevo do Brasil do TOPODATA, por área, direto no QGIS</h1>
+    <p class="lead">Desenhe um retângulo no mapa. O plugin encontra as folhas TOPODATA que o intersectam, mostra quantos arquivos e quantos megabytes serão baixados e traz os GeoTIFF originais do INPE — altitude, declividade, curvaturas, orientação, forma de terreno, relevo sombreado e divisores — sem travar o QGIS.</p>
+    <a class="btn primary" href="#instalacao">⬇ Instalar o plugin</a>
+    <a class="btn ghost" href="https://github.com/marcellobenigno/topodata-downloader">★ Código no GitHub</a>
+  </div>
+  <figure><img src="assets/img/hero.jpg" alt="Relevo da Paraíba entre o litoral e o planalto da Borborema: altitude em cores, do verde (baixo) ao marrom (alto), com relevo sombreado; uma seleção tracejada laranja cruza quatro folhas TOPODATA, 06S375, 06S36_, 07S375 e 07S36_" width="1200" height="900"></figure>
+</div></div>
+
+<section id="visao-geral"><div class="wrap">
+  <p class="kicker k-green">Visão geral</p><h2>O que o plugin faz</h2>
+  <p class="intro">O <a href="https://data.inpe.br/dados/topodata/">TOPODATA</a> é o banco de dados geomorfométricos do INPE, derivado do SRTM e refinado para 1 segundo de arco (~30 m), com cobertura de todo o território brasileiro em folhas de 1° × 1,5°. Encontrar as folhas certas e baixar produto por produto é trabalhoso; o plugin faz isso a partir de uma área desenhada no mapa.</p>
+  <div class="grid c4"><div class="card"><div class="ico t-orange">▭</div><h4>Desenhe a área</h4><p>Clique e arraste no mapa, em qualquer SRC. A seleção é convertida para EPSG:4326 e cruzada com a grade local de 556 folhas.</p></div><div class="card"><div class="ico t-blue">🧮</div><h4>Saiba antes</h4><p>Arquivos por produto e por folha, sem duplicatas, e o tamanho exato informado pelo servidor do INPE — ou “não disponível”, nunca um chute.</p></div><div class="card"><div class="ico t-green">🛡️</div><h4>Baixe com segurança</h4><p>Em segundo plano, cancelável, com repetição limitada e retomada validada. Um arquivo incompleto nunca recebe o nome final.</p></div><div class="card"><div class="ico t-sand">🗂️</div><h4>Use na hora</h4><p>Cada GeoTIFF vira uma camada separada no grupo TOPODATA, com cores por classe nos produtos classificados.</p></div></div>
+  <figure class="shot"><img src="assets/img/brasil_grade.png" alt="À esquerda, o Brasil coberto pelas 556 folhas da grade TOPODATA, com um retângulo laranja no Nordeste; à direita, o detalhe com os nomes das folhas e as quatro folhas que intersectam a seleção tracejada destacadas em laranja" loading="lazy" width="2104" height="1120">
+    <div class="pair"><div><b>A grade TOPODATA</b> — 556 folhas na articulação 1:250.000 (1° de latitude × 1,5° de longitude).</div><div><b>A consulta</b> — as folhas que intersectam o retângulo desenhado (tracejado) são as que serão baixadas.</div></div></figure>
+  <h3>O que ele não faz</h3>
+  <ul class="plain"><li><b>não</b> cria mosaicos, <b>não</b> recorta pela área desenhada e <b>não</b> reprojeta: os arquivos são os originais do INPE, folha inteira, com o nome original (ex.: <code>07S36_ZN.tif</code>);</li><li>não calcula novas variáveis: declividade, curvaturas etc. são os produtos já publicados pelo INPE;</li><li>não funciona sem internet: a grade é local, mas os arquivos vêm do servidor do INPE.</li></ul>
+</div></section>
+
+<section id="instalacao"><div class="wrap">
+  <p class="kicker k-orange">Instalação</p><h2>Instalar, ativar, verificar</h2>
+  <p class="intro">Nenhuma biblioteca extra: o plugin usa só o PyQGIS e a biblioteca padrão do Python que vêm com o QGIS.</p>
+  <h3>Requisitos e versões testadas</h3>
+  <ul class="plain"><li>Mínimo declarado: QGIS 3.28. Testado no QGIS 3.44 (macOS), com testes automáticos num QGIS sem tela. QGIS 4 (Qt6) e Windows ainda não foram testados.</li><li>Internet para consultar tamanhos e baixar os arquivos (servidor <code>data.inpe.br</code>).</li><li>Espaço em disco: de 0,4 MB a ~120 MB por arquivo, conforme o produto (veja <a href="#produtos">Produtos</a>).</li></ul>
+  <ol class="steps"><li><h4>Gere o ZIP do plugin</h4><p>Baixe o código do <a href="https://github.com/marcellobenigno/topodata-downloader">repositório</a> (<i>Code → Download ZIP</i> ou <code>git clone</code>) e, na pasta dele, rode o script abaixo. Ele cria <code>dist/topodata_downloader-0.1.0.zip</code>.</p><pre><code>git clone https://github.com/marcellobenigno/topodata-downloader.git
+cd topodata-downloader
+python scripts/make_zip.py</code></pre></li><li><h4>Instale pelo QGIS</h4><p><b>Complementos → Gerenciar e instalar complementos → Instalar a partir do ZIP</b>, escolha o arquivo e confirme. Como o plugin é experimental, marque <i>Mostrar também os complementos experimentais</i> nas Configurações do gerenciador.</p></li><li><h4>Verifique</h4><p>Na aba <i>Instalados</i>, <b>TOPODATA Downloader</b> deve estar marcado. O botão <img src="assets/icon.svg" alt="" style="display:inline;width:20px;vertical-align:-4px"> aparece na barra de complementos e em <b>Raster → TOPODATA Downloader</b>.</p></li></ol>
+  <div style="margin-top:18px"><details><summary>Instalação para desenvolvimento (link simbólico)</summary><div><p>Ligue a pasta <code>topodata_downloader/</code> do repositório à pasta de complementos do seu perfil; cada mudança no código vale depois de recarregar o plugin (<i>Plugin Reloader</i>) ou reiniciar o QGIS.</p><pre><code># macOS
+ln -s "$PWD/topodata_downloader" \
+  "$HOME/Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins/topodata_downloader"
+# Linux
+ln -s "$PWD/topodata_downloader" \
+  "$HOME/.local/share/QGIS/QGIS3/profiles/default/python/plugins/topodata_downloader"</code></pre><p>No Windows, a pasta é <code>%APPDATA%\QGIS\QGIS3\profiles\default\python\plugins</code>; copie a pasta para lá ou crie uma junção com <code>mklink /J</code>.</p></div></details></div>
+  <div class="note warn"><b>Proxy.</b> O plugin usa o proxy HTTP definido em <i>Configurações → Opções → Rede</i>. Um proxy ligado mas inacessível faz a consulta de tamanhos mostrar “não disponível” e os downloads falharem com “Não foi possível conectar ao servidor do INPE”. Sem proxy configurado, vale o proxy do sistema.</div>
+</div></section>
+
+<section id="primeiros-passos"><div class="wrap">
+  <p class="kicker k-blue">Primeiros passos</p><h2>Do retângulo às camadas no mapa</h2>
+  <p class="intro">Um primeiro uso na Paraíba, entre João Pessoa e Campina Grande, com produtos pequenos (alguns MB por folha) para terminar em poucos segundos.</p>
+  <div class="diagram" style="margin-bottom:22px"><svg viewBox="0 0 1000 200" role="img" aria-label="Fluxo: desenhar retângulo, consultar a grade, montar o plano, consultar tamanhos, baixar com segurança e carregar no QGIS">
+    <defs><marker id="ah1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ah" d="M0 0L10 5L0 10z"/></marker></defs>
+    <g stroke-width="2">
+      <rect class="b-orange" x="8" y="60" width="140" height="80" rx="12"/>
+      <rect class="b-green" x="178" y="60" width="140" height="80" rx="12"/>
+      <rect class="b-blue" x="348" y="60" width="140" height="80" rx="12"/>
+      <rect class="b-blue" x="518" y="60" width="140" height="80" rx="12"/>
+      <rect class="b-red" x="688" y="60" width="140" height="80" rx="12"/>
+      <rect class="b-sand" x="858" y="60" width="134" height="80" rx="12"/>
+    </g>
+    <g class="ln" stroke-width="3"><path d="M148 100H174" marker-end="url(#ah1)"/><path d="M318 100H344" marker-end="url(#ah1)"/><path d="M488 100H514" marker-end="url(#ah1)"/><path d="M658 100H684" marker-end="url(#ah1)"/><path d="M828 100H854" marker-end="url(#ah1)"/></g>
+    <g text-anchor="middle" font-size="15" font-weight="700"><text x="78" y="95">1. Desenhar</text><text x="248" y="95">2. Grade local</text><text x="418" y="95">3. Plano</text><text x="588" y="95">4. Tamanhos</text><text x="758" y="95">5. Baixar</text><text x="925" y="95">6. Carregar</text></g>
+    <g text-anchor="middle" font-size="12" class="t-sub"><text x="78" y="117">retângulo no mapa</text><text x="248" y="117">intersects · 4326</text><text x="418" y="117">produtos × folhas</text><text x="588" y="117">HEAD · Content-Length</text><text x="758" y="117">.part → validar</text><text x="925" y="117">camadas separadas</text></g>
+    <g text-anchor="middle" font-size="12" class="t-sub"><text x="248" y="40">sem rede</text><text x="418" y="40">sem rede</text><text x="588" y="40">servidor do INPE</text><text x="758" y="40">servidor do INPE</text></g>
+  </svg></div>
+  <ol class="steps"><li><h4>Ative a ferramenta e desenhe</h4><p>Clique no botão <b>Baixar dados TOPODATA por área</b> e <b>clique e arraste</b> no mapa sobre a região de interesse. <code>Esc</code> cancela; um clique sem arrasto é recusado com um aviso. <b>Resultado esperado:</b> o diálogo abre com oeste, sul, leste e norte em graus e as folhas encontradas.</p></li><li><h4>Escolha a pasta e os produtos</h4><p>Escolha a pasta de destino (ela é criada se não existir) e marque, por exemplo, <i>Decliv. (A)</i>, <i>Orientação — octantes</i> e <i>Forma de terreno</i>. <b>Resultado esperado:</b> o resumo mostra os arquivos por produto e, depois de alguns segundos, o tamanho exato de cada um.</p></li><li><h4>Baixe</h4><p><b>Baixar N arquivo(s)</b> passa para a página de execução. O QGIS continua livre para uso; a tarefa também aparece na barra de status. <b>Resultado esperado:</b> “Concluído com sucesso” e as camadas no grupo <b>TOPODATA</b>.</p></li></ol>
+  <figure class="shot"><img src="assets/img/dialogo_configuracao.jpg" alt="Janela do QGIS com o relevo da Paraíba e uma seleção tracejada laranja à esquerda; à direita, o diálogo do plugin pronto para baixar: extensão em graus, quatro quadrículas, pasta de destino, três produtos marcados e o resumo com 12 arquivos e 337,8 MB" loading="lazy">
+    <figcaption><b>Configuração.</b> Quatro folhas e três produtos: 12 arquivos, 337,8 MB — tamanhos informados pelo servidor do INPE antes de baixar qualquer dado. Altitude é o produto que pesa (~75 MB por folha); <i>Decliv. (A)</i> tem menos de 2 MB por folha.</figcaption></figure>
+  <figure class="shot"><img src="assets/img/dialogo_execucao.jpg" alt="Diálogo na página de execução com Concluído com sucesso, barra de progresso em 100%, seis arquivos com a situação Baixado e os botões Abrir pasta de destino e Voltar à configuração; ao fundo, as folhas de Decliv. (A) carregadas no mapa" loading="lazy">
+    <figcaption><b>Execução.</b> Progresso geral, arquivo atual, a situação de cada arquivo e as ações finais. “Concluído com sucesso” só aparece quando <i>todos</i> os arquivos estão na pasta; caso contrário, “Concluído parcialmente” ou “Download cancelado”.</figcaption></figure>
+  <div class="note tip">💡 <b>Refazer seleção no mapa</b> volta ao mapa sem perder a pasta, os produtos e as opções. O diálogo também lembra a última pasta e os produtos marcados entre sessões.</div>
+</div></section>
+
+<section id="produtos"><div class="wrap">
+  <p class="kicker k-sand">Produtos</p><h2>Os 16 produtos TOPODATA</h2>
+  <p class="intro">Cada folha tem os mesmos 16 produtos. Os <b>numéricos</b> (Float32) guardam o valor da variável; os <b>classificados</b> (Byte) guardam classes. A URL de cada produto é a da grade com o código trocado: <code>…/07S/36_/07S36_<b>ZN</b>.tif</code> → <code>…/07S36_<b>SA</b>.tif</code>.</p>
+  <figure class="shot"><img src="assets/img/produtos.jpg" alt="Mosaico de 16 painéis com a mesma área da folha 07S36_ (entre Itabaiana e Campina Grande) em cada produto: altitude, declividade, três classificações de declividade, curvaturas vertical e horizontal e suas classes, orientação, orientação em octantes, forma de terreno, relevo sombreado e divisores e talvegues" loading="lazy">
+    <figcaption>A mesma área da folha <code>07S36_</code> (0,6° × 0,4°, entre Itabaiana e Campina Grande, PB) nos 16 produtos. Classificados com as cores que o plugin aplica ao carregar; numéricos com rampas de cor escolhidas para a figura.</figcaption></figure>
+  <div class="table"><table>
+    <tr><th>Rótulo</th><th>Código</th><th>Tipo</th><th>Conteúdo</th><th>Cores no QGIS</th><th class="num">Tamanho por folha*</th></tr>
+    <tr><td><b>Altitude</b></td><td><code>ZN</code></td><td>numérico</td><td>MDE refinado; altitude ortométrica em m (EGM96)</td><td><span class="small">cinza (padrão do QGIS)</span></td><td class="num">31–103 MB</td></tr>
+    <tr><td><b>Declividade</b></td><td><code>SN</code></td><td>numérico</td><td>declividade em %</td><td><span class="small">cinza (padrão do QGIS)</span></td><td class="num">31–113 MB</td></tr>
+    <tr><td><b>Decliv. (A)</b></td><td><code>SA</code></td><td>4 classes</td><td>Marques (1971), atualizada em Lepsch et al. (1991)</td><td><span class="chips"><i style="background:#fff3c4"></i><i style="background:#f9bb5b"></i><i style="background:#d15231"></i><i style="background:#67001f"></i></span></td><td class="num">0,4–2,1 MB</td></tr>
+    <tr><td><b>Decliv. (B)</b></td><td><code>SB</code></td><td>7 classes</td><td>A a G (Lepsch et al., 1991)</td><td><span class="chips"><i style="background:#fff3c4"></i><i style="background:#fede88"></i><i style="background:#f9bb5b"></i><i style="background:#f08a3c"></i><i style="background:#d15231"></i><i style="background:#a42427"></i><i style="background:#67001f"></i></span></td><td class="num">0,6–3,2 MB</td></tr>
+    <tr><td><b>Decliv. (C)</b></td><td><code>SC</code></td><td>6 classes</td><td>EMBRAPA (1999): plano a escarpado</td><td><span class="chips"><i style="background:#fff3c4"></i><i style="background:#fdd97c"></i><i style="background:#f5a74e"></i><i style="background:#de6835"></i><i style="background:#b02b29"></i><i style="background:#67001f"></i></span></td><td class="num">0,4–2,9 MB</td></tr>
+    <tr><td><b>Curv. vertical</b></td><td><code>VN</code></td><td>numérico</td><td>°/m; convexo (+), côncavo (−)</td><td><span class="small">cinza (padrão do QGIS)</span></td><td class="num">32–118 MB</td></tr>
+    <tr><td><b>Curv. vertical — 3 classes</b></td><td><code>V3</code></td><td>3 classes</td><td>côncava, retilínea, convexa</td><td><span class="chips"><i style="background:#2166ac"></i><i style="background:#f7f7f7"></i><i style="background:#b35806"></i></span></td><td class="num">0,4–3,1 MB</td></tr>
+    <tr><td><b>Curv. vertical — 5 classes</b></td><td><code>V5</code></td><td>5 classes</td><td>graus de concavidade e convexidade</td><td><span class="chips"><i style="background:#2166ac"></i><i style="background:#92c5de"></i><i style="background:#f7f7f7"></i><i style="background:#f4a582"></i><i style="background:#b35806"></i></span></td><td class="num">1,5–5,3 MB</td></tr>
+    <tr><td><b>Curv. horizontal</b></td><td><code>HN</code></td><td>numérico</td><td>°/m; convergente (−), divergente (+)</td><td><span class="small">cinza (padrão do QGIS)</span></td><td class="num">20–69 MB</td></tr>
+    <tr><td><b>Curv. horizontal — 3 classes</b></td><td><code>H3</code></td><td>3 classes</td><td>convergente, planar, divergente</td><td><span class="chips"><i style="background:#3a9a5b"></i><i style="background:#f7f7f7"></i><i style="background:#9a5bb0"></i></span></td><td class="num">1,7–5,3 MB</td></tr>
+    <tr><td><b>Curv. horizontal — 5 classes</b></td><td><code>H5</code></td><td>5 classes</td><td>graus de convergência e divergência</td><td><span class="chips"><i style="background:#3a9a5b"></i><i style="background:#b8e3b1"></i><i style="background:#f7f7f7"></i><i style="background:#d4bde0"></i><i style="background:#9a5bb0"></i></span></td><td class="num">1,8–5,9 MB</td></tr>
+    <tr><td><b>Orientação</b></td><td><code>ON</code></td><td>numérico</td><td>azimute da vertente, 0° a 360°</td><td><span class="small">cinza (padrão do QGIS)</span></td><td class="num">31–114 MB</td></tr>
+    <tr><td><b>Orientação — octantes</b></td><td><code>OC</code></td><td>8 classes</td><td>N, NE, E, SE, S, SW, W, NW</td><td><span class="chips"><i style="background:#d7301f"></i><i style="background:#f28e2b"></i><i style="background:#fdd835"></i><i style="background:#8cc152"></i><i style="background:#2e9e5b"></i><i style="background:#2bb3c0"></i><i style="background:#3a6fb0"></i><i style="background:#8e5bb5"></i></span></td><td class="num">3,3–10 MB</td></tr>
+    <tr><td><b>Forma de terreno</b></td><td><code>FT</code></td><td>9 classes</td><td>curvatura vertical × horizontal</td><td><span class="chips"><i style="background:#1f78b4"></i><i style="background:#a6cee3"></i><i style="background:#6a3d9a"></i><i style="background:#33a02c"></i><i style="background:#b2df8a"></i><i style="background:#cab2d6"></i><i style="background:#e31a1c"></i><i style="background:#fb9a99"></i><i style="background:#ff7f00"></i></span></td><td class="num">1,9–7,7 MB</td></tr>
+    <tr><td><b>Relevo sombreado</b></td><td><code>RS</code></td><td>numérico</td><td>relevo sombreado (hillshade)</td><td><span class="small">cinza (padrão do QGIS)</span></td><td class="num">28–107 MB</td></tr>
+    <tr><td><b>Divisores e talvegues</b></td><td><code>DD</code></td><td>16 + 2 classes</td><td>orientação em 16 semioctantes + linhas de talvegue e divisor (processo ADD)</td><td><span class="grad" style="background:linear-gradient(90deg,#e98d84,#f0a787,#f8c18a,#fbd58d,#feea90,#dfe398,#c0dda0,#a6d4a2,#8ccaa5,#8bcfc1,#8ad5dc,#8ec2d8,#93b0d4,#aaaad5,#c1a5d6,#d599ad)"></span> <span class="chips"><i style="background:#08306b"></i><i style="background:#a50f15"></i></span></td><td class="num">4,1–13 MB</td></tr>
+  </table></div>
+  <p class="small">* Faixa medida por consulta HEAD em quatro folhas de tamanhos diferentes (<code>01N495</code>, <code>09S375</code>, <code>23S465</code>, <code>33S54_</code>). O plugin mostra o tamanho exato de cada arquivo da sua seleção antes de baixar.</p>
+  <div class="note"><b>Por que o plugin aplica cores às classes?</b> Os GeoTIFF classificados do INPE trazem uma tabela de cores em tons de cinza quase pretos (valor <i>v</i> → cinza <i>v−1</i>); abertos direto no QGIS, parecem pretos. Ao carregar, o plugin define um estilo de camada com uma cor por classe. É só o estilo: o arquivo não é alterado, e você pode trocar as cores nas propriedades da camada. A ordem das classes segue a descrição do INPE; confira a legenda oficial antes de interpretar cada classe.</div>
+</div></section>
+
+<section id="como-funciona"><div class="wrap">
+  <p class="kicker k-orange">Como funciona</p><h2>Regras que definem o que é baixado</h2>
+  <p class="intro">Três escolhas explicam o comportamento do plugin: quais folhas entram, como a contagem e o tamanho são calculados e como um download é considerado completo.</p>
+
+  <h3>Quais folhas entram: <code>intersects</code></h3>
+  <p>A grade (<code>grade_topodata.geojson</code>, 556 polígonos em EPSG:4326, campos <code>scene</code> e <code>url</code>) vai junto com o plugin e é indexada uma vez por sessão. Um índice espacial pré-seleciona as folhas pela caixa envolvente; cada candidata é confirmada com <code>intersects</code> sobre a geometria real. <b>Folhas apenas tocadas pela borda ou por um vértice do retângulo entram.</b></p>
+  <div class="grid c2" style="align-items:center">
+    <div class="diagram"><svg viewBox="0 0 460 300" role="img" aria-label="Regra de interseção: quatro folhas; o retângulo A cruza duas e entra nas duas; o retângulo B toca a borda de uma folha vizinha, que também entra; o retângulo C dentro de uma folha só entra nela">
+      <g stroke-width="2"><rect class="b-card" x="20" y="20" width="210" height="130"/><rect class="b-card" x="230" y="20" width="210" height="130"/><rect class="b-card" x="20" y="150" width="210" height="130"/><rect class="b-card" x="230" y="150" width="210" height="130"/></g>
+      <g font-size="13" font-weight="700" class="t-sub"><text x="30" y="40">06S375</text><text x="240" y="40">06S36_</text><text x="30" y="170">07S375</text><text x="240" y="170">07S36_</text></g>
+      <rect x="150" y="70" width="140" height="55" rx="3" fill="none" class="ln-orange" stroke-width="3" stroke-dasharray="8 5"/><text x="220" y="103" text-anchor="middle" font-weight="800" class="t-orange">A</text>
+      <rect x="230" y="200" width="90" height="55" rx="2" fill="none" class="ln-green" stroke-width="3" stroke-dasharray="8 5"/><text x="275" y="233" text-anchor="middle" font-weight="800" class="t-green">B</text>
+      <rect x="70" y="200" width="90" height="55" rx="2" fill="none" class="ln-red" stroke-width="3" stroke-dasharray="8 5"/><text x="115" y="233" text-anchor="middle" font-weight="800" class="t-red">C</text>
+    </svg></div>
+    <div><ul class="plain"><li><b class="k-orange">A</b> cruza a divisa entre <code>06S375</code> e <code>06S36_</code>: entram as duas.</li><li><b class="k-green">B</b> está dentro de <code>07S36_</code>, com a borda oeste <i>exatamente</i> na divisa: <code>07S375</code>, só tocada, também entra.</li><li><b class="k-red">C</b> está inteiro em <code>07S375</code>: só ela entra.</li></ul><p class="small">As folhas reais têm meia margem de pixel (~0,000139°, ~15 m) além do limite nominal, então vizinhas se sobrepõem levemente. Um retângulo que começa até 15 m antes da divisa já inclui as duas folhas.</p></div>
+  </div>
+  <h3>Seleção em outros sistemas de referência</h3>
+  <p>A seleção é feita no SRC do projeto (UTM, Web Mercator, Policônica…). O retângulo vira um polígono com 32 vértices extras por lado e é transformado para EPSG:4326 com o contexto de transformação do projeto. Num SRC projetado a consulta usa a forma real da seleção em coordenadas geográficas, não uma caixa envolvente maior. O diálogo mostra a caixa envolvente da seleção já em graus.</p>
+
+  <h3>Contagem e tamanho</h3>
+  <dl class="facts"><dt>Arquivos</dt><dd>Produtos marcados × folhas encontradas, uma URL por par; URLs repetidas contam uma vez. O resumo mostra os arquivos por produto, por folha e o total. Uma folha cuja URL fuja do padrão é ignorada e informada — nada é adivinhado.</dd><dt>Tamanho</dt><dd>Não há índice local de tamanhos e o servidor não lista diretórios. O plugin pergunta ao servidor, em segundo plano, o <code>Content-Length</code> de cada arquivo (requisição <code>HEAD</code>, sem baixar dados; 6 em paralelo, guardadas na sessão). É o tamanho exato do arquivo atual.</dd><dt>Sem resposta</dt><dd>O total aparece como <b>“não disponível”</b>, com “pelo menos X” para a parte conhecida. O download pode ser feito mesmo assim.</dd><dt>Aviso de volume</dt><dd>A partir de 40 arquivos ou 5 GB o resumo avisa e o download pede confirmação — nada é bloqueado.</dd></dl>
+
+  <h3>Download seguro</h3>
+  <div class="diagram" style="margin:18px 0"><svg viewBox="0 0 1000 300" role="img" aria-label="Download seguro: os dados vão para o arquivo .part; ao fim, tamanho e cabeçalho TIFF são conferidos e só então o arquivo é renomeado para o nome final. Em falha temporária há nova tentativa com Range e If-Range; se o servidor confirmar com 206 e Content-Range o trecho é anexado, senão o download recomeça do zero. Ao cancelar, o .part fica para retomar depois">
+    <defs><marker id="ah2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ah" d="M0 0L10 5L0 10z"/></marker></defs>
+    <g stroke-width="2"><rect class="b-blue" x="10" y="40" width="160" height="76" rx="12"/><rect class="b-orange" x="220" y="40" width="190" height="76" rx="12"/><rect class="b-sand" x="460" y="40" width="210" height="76" rx="12"/><rect class="b-green" x="720" y="40" width="270" height="76" rx="12"/>
+      <rect class="b-red" x="220" y="190" width="190" height="80" rx="12"/><rect class="b-blue" x="460" y="190" width="210" height="80" rx="12"/><rect class="b-card" x="720" y="190" width="270" height="80" rx="12"/></g>
+    <g class="ln" stroke-width="3"><path d="M170 78H216" marker-end="url(#ah2)"/><path d="M410 78H456" marker-end="url(#ah2)"/><path d="M670 78H716" marker-end="url(#ah2)"/><path d="M315 116V186" marker-end="url(#ah2)" stroke-dasharray="6 5"/><path d="M410 230H456" marker-end="url(#ah2)"/><path d="M565 190V120" marker-end="url(#ah2)"/><path d="M670 230H716" marker-end="url(#ah2)" stroke-dasharray="6 5"/></g>
+    <g text-anchor="middle" font-size="15" font-weight="700"><text x="90" y="73">GET</text><text x="315" y="73">07S36_ZN.tif.part</text><text x="565" y="73">conferir</text><text x="855" y="73">07S36_ZN.tif</text><text x="315" y="224">falha temporária</text><text x="565" y="224">Range + If-Range</text><text x="855" y="224">cancelar</text></g>
+    <g text-anchor="middle" font-size="12" class="t-sub"><text x="90" y="95">servidor do INPE</text><text x="315" y="95">+ .part.json (ETag, total)</text><text x="565" y="95">tamanho = Content-Length · TIFF</text><text x="855" y="95">os.replace — nome final</text><text x="315" y="246">conexão, tempo, HTTP 5xx</text><text x="315" y="262">até 4 tentativas: 2, 5, 10 s</text><text x="565" y="246">206 e Content-Range conferem?</text><text x="565" y="262">sim: anexa · não: recomeça</text><text x="855" y="246">.part mantido para retomar</text><text x="855" y="262">arquivos prontos intactos</text></g>
+  </svg></div>
+  <ul class="plain"><li><b>Nome final só para arquivo completo.</b> Os bytes vão para <code>.part</code>; o nome final só é dado depois de conferir o tamanho contra o <code>Content-Length</code> e o cabeçalho TIFF (uma página de erro, por exemplo, é descartada).</li><li><b>Retomada validada.</b> O ETag do servidor fica em <code>.part.json</code>. Na retomada são enviados <code>Range</code> e <code>If-Range</code>; os bytes só são anexados se a resposta for <code>206</code> com <code>Content-Range</code> começando exatamente no fim do parcial e com o mesmo total. Arquivo mudado no servidor, parcial sem ETag ou faixa que não confere: o parcial é descartado e o download recomeça do zero.</li><li><b>Repetições limitadas.</b> Falhas temporárias (conexão, tempo esgotado, HTTP 408/425/429/5xx) têm até 4 tentativas, com esperas de 2, 5 e 10 s. Erros definitivos (404, 403) não são repetidos.</li><li><b>Arquivos que já existem</b> são reutilizados se o tamanho for igual ao do servidor e o cabeçalho TIFF for válido. Se forem diferentes, ou com <i>Baixar novamente</i> marcado, são baixados de novo, e o arquivo antigo só é substituído quando o novo estiver completo.</li><li><b>Cancelamento</b> a qualquer momento: verificado a cada bloco de 256 kB e durante as esperas. O arquivo em andamento fica como <code>.part</code>; os não iniciados aparecem como “Cancelado”.</li></ul>
+
+  <h3>Carregamento no QGIS</h3>
+  <p>Com <i>Carregar as imagens no QGIS ao concluir</i> marcado, cada arquivo disponível (baixado ou reutilizado) vira uma <b>camada separada</b> no grupo <b>TOPODATA</b>, com o caminho final e o nome <code>07S36_SA — Decliv. (A)</code>. Arquivos que já estão no projeto não são duplicados; os que o GDAL não abre aparecem na tabela com o motivo.</p>
+  <figure class="shot"><img src="assets/img/camadas.jpg" alt="Painel de camadas do QGIS com o grupo TOPODATA e seis camadas, duas por produto; ao lado, as duas folhas de cada produto lado a lado no mapa, cada uma uma camada própria, com cores por classe" loading="lazy">
+    <figcaption>Seis arquivos, seis camadas: duas folhas (<code>07S375</code> e <code>07S36_</code>) de três produtos. Sem mosaico, recorte nem reprojeção — a divisa entre as folhas continua visível.</figcaption></figure>
+</div></section>
+
+<section id="ajuda"><div class="wrap">
+  <p class="kicker k-red">Ajuda</p><h2>Problemas comuns</h2>
+  <p class="intro">Cada mensagem do plugin traz uma explicação curta; o detalhe técnico fica em <b>Detalhes técnicos</b> (pode ser copiado) e em <i>Exibir → Painéis → Mensagens de log</i>, aba <i>TOPODATA Downloader</i>.</p>
+  <details><summary>O tamanho aparece como “não disponível”</summary><div><p>A consulta <code>HEAD</code> ao servidor do INPE falhou para algum arquivo: sem internet, proxy do QGIS inacessível ou servidor fora do ar. Confira a conexão e o proxy em <i>Configurações → Opções → Rede</i> e use <b>Consultar tamanhos novamente</b>. O download pode ser feito mesmo sem o tamanho; o progresso passa a ser contado por arquivos.</p></div></details>
+  <details><summary>“Não foi possível conectar ao servidor do INPE”</summary><div><p>A rede não alcança <code>data.inpe.br</code>. A causa mais comum é um proxy ligado no QGIS que não existe mais; desligue-o ou corrija-o em <i>Configurações → Opções → Rede</i>. As falhas temporárias já são repetidas automaticamente até 4 vezes.</p></div></details>
+  <details><summary>Ficaram arquivos <code>.part</code> e <code>.part.json</code> na pasta</summary><div><p>São downloads interrompidos (cancelamento, falha ou QGIS fechado). Baixe de novo com a mesma pasta: o plugin retoma do ponto em que parou se o servidor confirmar que o arquivo não mudou; senão recomeça. Pode apagá-los com segurança se não for continuar.</p></div></details>
+  <details><summary>Um arquivo aparece como “Já existia (verificado)”</summary><div><p>O arquivo já estava na pasta com o mesmo tamanho do servidor e cabeçalho TIFF válido, então não foi baixado de novo. Para forçar, marque <b>Baixar novamente arquivos que já existem na pasta</b>.</p></div></details>
+  <details><summary>As imagens classificadas aparecem pretas</summary><div><p>Acontece ao abrir os arquivos classificados direto no QGIS (sem o plugin): a tabela de cores que vem nos arquivos é cinza quase preta. Carregue-os pelo plugin (<b>Carregar no QGIS</b>) para receber as cores por classe, ou escolha <i>Valores únicos</i> em <i>Propriedades → Simbologia</i>.</p></div></details>
+  <details><summary>Quanto tempo leva?</summary><div><p>Depende da conexão, do servidor do INPE e do volume. Produtos classificados têm poucos MB por folha; os numéricos e o relevo sombreado têm 30–120 MB por folha cada um. Marcar <i>todos</i> os produtos numa área de 4 folhas passa de 1 GB.</p></div></details>
+  <details><summary>Fechei o diálogo durante o download</summary><div><p>O plugin pergunta antes (inclusive com <code>Esc</code>). Ao confirmar, o download é cancelado: os arquivos concluídos ficam, o em andamento vira <code>.part</code>.</p></div></details>
+</div></section>
+
+<section id="dados"><div class="wrap">
+  <p class="kicker k-green">Dados</p><h2>Sobre o TOPODATA</h2>
+  <p class="intro">Banco de dados geomorfométricos do Brasil, do Instituto Nacional de Pesquisas Espaciais (INPE). Os dados de elevação do SRTM (fevereiro de 2000) foram refinados por krigagem de 3 para 1 segundo de arco, para favorecer as derivações geomorfométricas, e todo o processamento foi feito em coordenadas geográficas, sem reprojeção.</p>
+  <div class="grid c4"><div class="card"><p class="stat k-green">~30 m</p><p>pixel de 0,00027777° (1″), refinado do SRTM de 3″ (~90 m)</p></div><div class="card"><p class="stat k-orange">556</p><p>folhas de 1° × 1,5°, articulação 1:250.000, cobrindo todo o Brasil</p></div><div class="card"><p class="stat k-blue">4326</p><p>coordenadas geográficas WGS 84; altitudes ortométricas (EGM96)</p></div><div class="card"><p class="stat k-sand">COG</p><p>GeoTIFF otimizado para nuvem; Float32 numéricos, Byte classificados</p></div></div>
+  <div class="note warn" style="margin-top:22px"><b>Modelo de superfície, não de terreno.</b> O SRTM (banda C) registra uma altura entre o topo da vegetação e o solo em áreas florestadas, e o topo das construções em áreas urbanas. A escala de trabalho compatível é 1:100.000.</div>
+  <ul class="plain"><li>Página oficial e termos de uso: <a href="https://data.inpe.br/dados/topodata/">data.inpe.br/dados/topodata</a>.</li><li>Valeriano, M. M.; Rossetti, D. F. Topodata: Brazilian full coverage refinement of SRTM data. <i>Applied Geography</i>, 32(2), 300–309, 2012.</li></ul>
+  <p class="small">O plugin não é um produto do INPE; só automatiza o acesso aos arquivos públicos. Cite o TOPODATA/INPE ao usar os dados.</p>
+</div></section>
+
+<section id="autor"><div class="wrap">
+  <p class="kicker k-green">Sobre o autor</p>
+  <div class="author">
+    <img src="assets/img/author.jpg" alt="Foto de Marcello Benigno" width="200" height="200"
+      loading="lazy">
+    <div>
+      <h2>Marcello Benigno</h2>
+      <p class="role">Professor do Curso Superior de Tecnologia em Geoprocessamento do Instituto Federal da Paraíba (IFPB).</p>
+      <p>Marcello Benigno é mestre em Ciências Geodésicas e Tecnologias da Geoinformação pela UFPE e engenheiro civil pela UFCG. Atua há mais de 20 anos no ensino e no desenvolvimento de soluções geotecnológicas de código aberto.</p><p>Sua experiência inclui desenvolvimento Web GIS e automação espacial com Python — especialmente PyQGIS, OSMnx, NetworkX e Django —, frontend de mapas web com Leaflet e Vue.js, modelagem de bancos de dados geográficos e arquiteturas em ambiente Linux. Esse trabalho orienta o desenvolvimento de ferramentas que integram análise espacial e geoprocessamento ao ecossistema QGIS.</p>
+      <p class="links"><a class="chip" href="https://github.com/marcellobenigno">GitHub</a><a class="chip" href="https://linkedin.com/in/marcellobenigno">LinkedIn</a><a class="chip" href="mailto:marcello@ifpb.edu.br">E-mail</a></p>
+    </div>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <span>Dados: TOPODATA, Instituto Nacional de Pesquisas Espaciais (INPE). Figuras feitas com o plugin sobre dados reais da Paraíba; limites estaduais: Natural Earth (mapa-múndi do QGIS).</span>
+  <span>Plugin sob licença GPL-2.0-or-later. · <a href="https://github.com/marcellobenigno/topodata-downloader">GitHub</a> · <a href="https://github.com/marcellobenigno/topodata-downloader/issues">Issues</a></span>
+</div></footer>
+<script src="assets/site.js"></script>
+</body>
+</html>

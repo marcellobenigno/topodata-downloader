@@ -2,7 +2,7 @@
 """Aliases de enums que funcionam no QGIS 3.28+ (Qt5) e no QGIS 4 (Qt6)."""
 
 from qgis.PyQt.QtCore import Qt
-from qgis.PyQt.QtWidgets import QAbstractItemView, QDialogButtonBox, QHeaderView, QMessageBox
+from qgis.PyQt.QtWidgets import QAbstractItemView, QHeaderView, QMessageBox
 from qgis.core import Qgis, QgsCoordinateReferenceSystem, QgsTask, QgsWkbTypes
 from qgis.gui import QgsFileWidget
 
@@ -60,6 +60,5 @@ SELECT_ROWS = _first((QAbstractItemView, "SelectionBehavior", "SelectRows"),
 STRETCH = _first((QHeaderView, "ResizeMode", "Stretch"), (QHeaderView, "Stretch"))
 RESIZE_TO_CONTENTS = _first((QHeaderView, "ResizeMode", "ResizeToContents"),
                             (QHeaderView, "ResizeToContents"))
-BUTTON_CLOSE = _first((QDialogButtonBox, "StandardButton", "Close"), (QDialogButtonBox, "Close"))
 MB_YES = _first((QMessageBox, "StandardButton", "Yes"), (QMessageBox, "Yes"))
 MB_NO = _first((QMessageBox, "StandardButton", "No"), (QMessageBox, "No"))
