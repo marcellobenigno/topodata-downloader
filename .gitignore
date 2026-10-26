@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# Build
+dist/
+*.zip
+
+# Downloads de teste
+*.part
+*.part.json
+
+# Editores / macOS
+.idea/
+.vscode/
+.DS_Store
