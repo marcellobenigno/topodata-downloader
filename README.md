@@ -293,6 +293,17 @@ Faça no QGIS de verdade, com tela:
   o tempo limite de leitura (60 s).
 - Os arquivos são salvos todos na pasta escolhida, com os nomes originais (sem subpastas).
 
+## Publicação de versões
+
+1. Atualize `version=` em `topodata_downloader/metadata.txt` e acrescente `## X.Y.Z - data`
+   ao `CHANGELOG.md`.
+2. Faça o commit e envie a tag com o mesmo número:
+   `git tag -a X.Y.Z -m "TOPODATA Downloader X.Y.Z" && git push origin X.Y.Z`.
+
+O workflow `.github/workflows/release.yml` confere a versão, roda os testes sem QGIS, gera o
+ZIP, cria a release no GitHub (notas do CHANGELOG, ZIP anexado) e publica no
+plugins.qgis.org com o secret `QGIS_TOKEN` (token do plugin; sem ele, essa etapa é pulada).
+
 ## Licença
 
 [GPL-2.0-or-later](LICENSE). Dados: TOPODATA, Instituto Nacional de Pesquisas Espaciais

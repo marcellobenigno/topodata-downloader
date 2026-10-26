@@ -3,7 +3,9 @@ name: Release
 # Envie uma tag como 0.1.0 (o mesmo número de `version=` em metadata.txt) para:
 #   1. conferir a versão e rodar os testes sem QGIS;
 #   2. gerar o ZIP do plugin (scripts/make_zip.py);
-#   3. criar a release no GitHub com as notas do CHANGELOG.md e o ZIP anexado.
+#   3. criar a release no GitHub com as notas do CHANGELOG.md e o ZIP anexado;
+#   4. publicar o ZIP no plugins.qgis.org com o token do plugin (secret QGIS_TOKEN, em
+#      Settings > Secrets and variables > Actions). Sem o secret, esse passo é ignorado.
 on:
   push:
     tags: ["*.*.*"]
@@ -42,3 +44,21 @@ jobs:
             gh release create "$GITHUB_REF_NAME" "$ZIP" --title "$GITHUB_REF_NAME" \
               --notes-file notes.md
           fi
+      - name: Publicar no plugins.qgis.org (secret QGIS_TOKEN)
+        # mesma chamada do qgis-plugin-ci (upload_plugin_to_osgeo_with_token)
+        env:
+          QGIS_TOKEN: ${{ secrets.QGIS_TOKEN }}
+        run: |
+          if [ -z "$QGIS_TOKEN" ]; then
+            echo "::notice::Sem o secret QGIS_TOKEN: publicação no plugins.qgis.org ignorada"
+            exit 0
+          fi
+          ZIP="dist/topodata_downloader-${GITHUB_REF_NAME}.zip"
+          code=$(curl -sS -o resposta.txt -w '%{http_code}' -X POST \
+            -H "Authorization: Bearer ${QGIS_TOKEN}" -F "package=@${ZIP}" \
+            https://plugins.qgis.org/plugins/api/topodata_downloader/version/add/)
+          head -c 2000 resposta.txt; echo
+          case "$code" in
+            2*) echo "Publicado: https://plugins.qgis.org/plugins/topodata_downloader/" ;;
+            *) echo "::error::plugins.qgis.org respondeu HTTP $code"; exit 1 ;;
+          esac
