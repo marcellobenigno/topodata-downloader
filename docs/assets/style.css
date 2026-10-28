@@ -65,7 +65,7 @@ code { font-family: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; 
 .hero .badges span { background: rgba(255, 255, 255, .18); border: 1px solid rgba(255, 255, 255, .35);
   padding: 4px 12px; border-radius: 999px; font-size: .85rem; }
 .hero figure { margin: 0; border-radius: var(--radius); overflow: hidden;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, .35); transform: rotate(-1.2deg); background: #f4f1ea; }
+  box-shadow: 0 25px 60px rgba(0, 0, 0, .35); background: #f4f1ea; }
 .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 10px;
   font-weight: 600; text-decoration: none; margin: 0 10px 10px 0; }
 .btn.primary { background: #fff; color: #0f3b2c; }
