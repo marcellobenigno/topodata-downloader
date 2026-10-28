@@ -3,6 +3,11 @@
 O formato segue [Keep a Changelog](https://keepachangelog.com/) e o projeto usa
 [Versionamento Semântico](https://semver.org/).
 
+## 0.1.1 - 2026-10-28
+
+- Descrição e texto "about" dos metadados em inglês (exigência do plugins.qgis.org),
+  mantendo o texto em português.
+
 ## 0.1.0 - 2026-10-26
 
 - Versão inicial de desenvolvimento.
