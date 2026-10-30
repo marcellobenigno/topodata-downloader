@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="pt-br" data-copy="Copiar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOPODATA Downloader — plugin para QGIS</title>
+<meta name="description" content="Complemento do QGIS que identifica as quadrículas da grade TOPODATA (INPE) que intersectam a área selecionada e baixa os produtos correspondentes, sem mosaico, recorte ou reprojeção.">
+<meta property="og:title" content="TOPODATA Downloader — plugin para QGIS">
+<meta property="og:description" content="Desenhe um retângulo no mapa e baixe os GeoTIFF do TOPODATA (INPE) das quadrículas que o intersectam, com contagem, tamanho informado pelo servidor, download validado e carregamento no QGIS.">
+<meta property="og:image" content="../assets/img/hero.jpg">
+<link rel="alternate" hreflang="pt-br" href="../pt-br/"><link rel="alternate" hreflang="en" href="../en/">
+<link rel="icon" href="../assets/icon.svg">
+<link rel="stylesheet" href="../assets/style.css">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>tailwind.config = { corePlugins: { preflight: false } };  // mantém os estilos base de style.css</script>
+</head>
+<body>
+<header class="topbar"><div class="wrap">
+  <a class="brand min-w-0" href="#top"><img class="shrink-0" src="../assets/icon.svg" alt=""><span class="truncate">TOPODATA Downloader</span></a>
+  <nav class="topnav hidden xl:flex items-center gap-4 ml-auto"><a href="#visao-geral">Visão geral</a><a href="#instalacao">Instalação</a><a href="#primeiros-passos">Primeiros passos</a><a href="#produtos">Produtos</a><a href="#como-funciona">Consulta e downloads</a><a href="#dados">Dados e limitações</a><a href="#ajuda">Problemas</a><a href="#autor">Autor</a></nav>
+  <div class="lang shrink-0 ml-auto xl:ml-0"><a href="../pt-br/" data-lang="pt-br" class="on" hreflang="pt-br" title="Português">PT</a><a href="../en/" data-lang="en" class="" hreflang="en" title="English">EN</a></div>
+  <button class="menu-btn xl:hidden shrink-0" type="button" aria-controls="mobile-nav"
+    aria-expanded="false" aria-label="Menu">
+    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+</div>
+<nav id="mobile-nav" class="topnav mobile-nav hidden xl:hidden">
+  <div class="wrap flex flex-col py-2"><a href="#visao-geral">Visão geral</a><a href="#instalacao">Instalação</a><a href="#primeiros-passos">Primeiros passos</a><a href="#produtos">Produtos</a><a href="#como-funciona">Consulta espacial e downloads</a><a href="#dados">Dados e limitações</a><a href="#ajuda">Solução de problemas</a><a href="#autor">Sobre o autor</a></div>
+</nav></header>
+
+<div class="hero" id="top"><div class="wrap">
+  <div>
+    <div class="badges"><span>QGIS 3.28+ (testado no 3.44)</span><span>16 produtos · 556 quadrículas</span><span>Interface PT-BR</span><span>GPL-2.0</span></div>
+    <h1>TOPODATA Downloader para QGIS</h1>
+    <p class="lead">Um complemento do QGIS que identifica as quadrículas da grade TOPODATA que intersectam a área selecionada e baixa os produtos correspondentes. Antes do download, apresenta a quantidade de arquivos e, quando o servidor informa o tamanho, uma estimativa baseada no cabeçalho HTTP. Os arquivos são mantidos individualmente, sem mosaico, recorte ou reprojeção.</p>
+    <a class="btn primary" href="#instalacao">⬇ Instalar o plugin</a>
+    <a class="btn ghost" href="https://github.com/marcellobenigno/topodata-downloader">★ Código no GitHub</a>
+  </div>
+  <figure><img src="../assets/img/hero.jpg" alt="Relevo da Paraíba entre o litoral e o planalto da Borborema: altitude em cores, do verde (baixo) ao marrom (alto), com relevo sombreado; uma seleção tracejada laranja cruza quatro quadrículas TOPODATA, 06S375, 06S36_, 07S375 e 07S36_" width="1200" height="900"></figure>
+</div></div>
+
+<section id="visao-geral"><div class="wrap">
+  <p class="kicker k-green">Visão geral</p><h2>O que o plugin faz</h2>
+  <p class="intro">O TOPODATA é um banco de dados geomorfométricos de cobertura nacional, desenvolvido pelo Instituto Nacional de Pesquisas Espaciais (INPE). Seus produtos são derivados dos dados de elevação da missão SRTM (<i>Shuttle Radar Topography Mission</i>) e incluem variáveis topográficas e produtos classificados. O conjunto foi refinado de um espaçamento original de 3 segundos de arco para 1 segundo de arco por krigagem, com o objetivo de favorecer as derivações geomorfométricas. Esse refinamento não acrescenta informação altimétrica independente nem deve ser interpretado como aumento equivalente da resolução espacial efetiva ou da acurácia dos dados de origem. <sup><a href="#ref-1">[1]</a> <a href="#ref-2">[2]</a></sup></p>
+  <div class="note tip"><b>Versões e estado do projeto.</b> QGIS 3.28 ou superior (versão mínima declarada); testado no QGIS 3.44 para macOS. Os testes automatizados foram executados em QGIS sem interface gráfica. Windows e QGIS 4 ainda não foram testados.</div>
+  <p>O plugin identifica as quadrículas da grade TOPODATA — ou folhas da articulação cartográfica — que intersectam a área selecionada e automatiza o download dos produtos correspondentes. A grade TOPODATA é consultada localmente; a consulta de tamanho e o download dos rasters exigem conexão com o servidor do INPE.</p>
+  <div class="grid c4"><div class="card"><div class="ico t-orange">▭</div><h4>Desenhe a área</h4><p>Um retângulo no mapa do QGIS, inclusive quando o projeto usa um SRC diferente do EPSG:4326.</p></div><div class="card"><div class="ico t-blue">🧮</div><h4>Confira antes</h4><p>As quadrículas que intersectam a seleção, os arquivos por produto e por quadrícula e o tamanho informado pelo servidor, quando disponível.</p></div><div class="card"><div class="ico t-green">🛡️</div><h4>Baixe em segundo plano</h4><p>Com progresso, cancelamento, tentativas limitadas e retomada validada.</p></div><div class="card"><div class="ico t-sand">🗂️</div><h4>Carregue no projeto</h4><p>Opcionalmente, cada GeoTIFF baixado entra como uma camada raster separada no projeto QGIS.</p></div></div>
+  <figure class="shot"><img src="../assets/img/brasil_grade.png" alt="À esquerda, o Brasil coberto pelas 556 quadrículas da grade TOPODATA, com um retângulo laranja no Nordeste; à direita, o detalhe com os nomes das quadrículas e as quatro quadrículas que intersectam a seleção tracejada destacadas em laranja" loading="lazy" width="2104" height="1120">
+    <div class="pair"><div><b>A grade TOPODATA</b> — 556 quadrículas de 1° de latitude × 1,5° de longitude, compatíveis com a articulação 1:250.000.</div><div><b>A consulta</b> — as quadrículas que intersectam o retângulo desenhado (tracejado) são as que serão baixadas.</div></div></figure>
+  <h3>O que o plugin não faz</h3>
+  <ul class="plain"><li>Não mosaica os rasters nem os recorta pela área selecionada.</li><li>Não reprojeta nem modifica os arquivos baixados. O QGIS pode reprojetar camadas dinamicamente apenas para exibição, conforme o SRC do projeto; isso não altera o arquivo no disco.</li><li>Não recalcula declividade, curvatura ou outras variáveis. Esses produtos são fornecidos pelo TOPODATA/INPE.</li><li>Não transforma os valores de elevação do TOPODATA em um modelo de terreno livre de vegetação e edificações.</li><li>Não funciona completamente offline: a grade é local, mas a consulta de tamanhos e a transferência dos arquivos dependem de acesso à internet.</li></ul>
+</div></section>
+
+<section id="instalacao"><div class="wrap">
+  <p class="kicker k-orange">Instalação</p><h2>Instalar, ativar, verificar</h2>
+  <p class="intro">Nenhuma biblioteca Python adicional: o complemento usa PyQGIS e a biblioteca padrão do Python distribuída com o QGIS.</p>
+  <h3>Requisitos</h3>
+  <ul class="plain"><li>QGIS 3.28 ou superior, conforme a versão mínima declarada pelo projeto.</li><li>Acesso à internet para consultar o servidor do INPE (<code>data.inpe.br</code>) e baixar os arquivos.</li><li>Espaço em disco adequado ao conjunto escolhido. O tamanho varia bastante por produto e por quadrícula (veja <a href="#produtos">Produtos</a>); use o resumo do plugin como referência quando o servidor informar os tamanhos.</li></ul>
+  <p class="small">QGIS 4 e Windows ainda não foram testados. Não interprete “versão mínima declarada” como garantia de compatibilidade em todas as plataformas: consulte os testes da versão publicada do plugin.</p>
+  <h3>Instalar a partir do ZIP</h3>
+  <ol class="steps"><li><h4>Gere o pacote</h4><p>Baixe o código-fonte do <a href="https://github.com/marcellobenigno/topodata-downloader">repositório do plugin</a> (<i>Code → Download ZIP</i>) ou clone o repositório e, na pasta dele, gere o pacote. O script cria <code>dist/topodata_downloader-&lt;versão&gt;.zip</code>, conforme a versão do projeto.</p><pre><code>git clone https://github.com/marcellobenigno/topodata-downloader.git
+cd topodata-downloader
+python scripts/make_zip.py</code></pre></li><li><h4>Instale pelo QGIS</h4><p><b>Complementos → Gerenciar e instalar complementos → Instalar a partir do ZIP</b>, selecione o pacote e confirme. Se o complemento ainda estiver marcado como experimental, habilite <i>Mostrar também os complementos experimentais</i> nas configurações do gerenciador.</p></li><li><h4>Verifique</h4><p>Na aba <i>Instalados</i>, confirme que <b>TOPODATA Downloader</b> está habilitado. O comando <img src="../assets/icon.svg" alt="" style="display:inline;width:20px;vertical-align:-4px"> deve aparecer na barra de complementos e no menu <b>Raster → TOPODATA Downloader</b>.</p></li></ol>
+  <div style="margin-top:18px"><details><summary>Instalação para desenvolvimento</summary><div><p>A pasta do plugin pode ser vinculada à pasta de complementos do perfil do QGIS. Após alterar o código, recarregue o complemento com uma ferramenta como <i>Plugin Reloader</i> ou reinicie o QGIS.</p><pre><code># macOS
+ln -s "$PWD/topodata_downloader" \
+  "$HOME/Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins/topodata_downloader"
+
+# Linux
+ln -s "$PWD/topodata_downloader" \
+  "$HOME/.local/share/QGIS/QGIS3/profiles/default/python/plugins/topodata_downloader"</code></pre><p>No Windows, a pasta do perfil costuma estar em <code>%APPDATA%\QGIS\QGIS3\profiles\default\python\plugins</code>. Copie a pasta do complemento para esse local ou crie uma junção usando <code>mklink /J</code>.</p></div></details></div>
+  <div class="note warn"><b>Proxy de rede.</b> O plugin utiliza o proxy configurado no QGIS em <i>Configurações → Opções → Rede</i>. Um proxy ativado, mas inacessível, pode impedir tanto a consulta de tamanhos quanto os downloads. Se necessário, verifique a configuração de proxy do QGIS ou do sistema.</div>
+</div></section>
+
+<section id="primeiros-passos"><div class="wrap">
+  <p class="kicker k-blue">Primeiros passos</p><h2>Do retângulo às camadas no mapa</h2>
+  <p class="intro">O fluxo completo, da seleção no mapa às camadas no projeto. As etapas de grade e plano não usam a rede; tamanhos e download consultam o servidor do INPE.</p>
+  <div class="diagram" style="margin-bottom:22px"><svg viewBox="0 0 1000 200" role="img" aria-label="Fluxo: desenhar retângulo, consultar a grade, montar o plano, consultar tamanhos, baixar com validação e carregar no QGIS">
+    <defs><marker id="ah1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ah" d="M0 0L10 5L0 10z"/></marker></defs>
+    <g stroke-width="2">
+      <rect class="b-orange" x="8" y="60" width="140" height="80" rx="12"/>
+      <rect class="b-green" x="178" y="60" width="140" height="80" rx="12"/>
+      <rect class="b-blue" x="348" y="60" width="140" height="80" rx="12"/>
+      <rect class="b-blue" x="518" y="60" width="140" height="80" rx="12"/>
+      <rect class="b-red" x="688" y="60" width="140" height="80" rx="12"/>
+      <rect class="b-sand" x="858" y="60" width="134" height="80" rx="12"/>
+    </g>
+    <g class="ln" stroke-width="3"><path d="M148 100H174" marker-end="url(#ah1)"/><path d="M318 100H344" marker-end="url(#ah1)"/><path d="M488 100H514" marker-end="url(#ah1)"/><path d="M658 100H684" marker-end="url(#ah1)"/><path d="M828 100H854" marker-end="url(#ah1)"/></g>
+    <g text-anchor="middle" font-size="15" font-weight="700"><text x="78" y="95">1. Desenhar</text><text x="248" y="95">2. Grade local</text><text x="418" y="95">3. Plano</text><text x="588" y="95">4. Tamanhos</text><text x="758" y="95">5. Baixar</text><text x="925" y="95">6. Carregar</text></g>
+    <g text-anchor="middle" font-size="12" class="t-sub"><text x="78" y="117">retângulo no mapa</text><text x="248" y="117">intersects · 4326</text><text x="418" y="117">produtos × quadrículas</text><text x="588" y="117">HEAD · Content-Length</text><text x="758" y="117">.part → validar</text><text x="925" y="117">camadas separadas</text></g>
+    <g text-anchor="middle" font-size="12" class="t-sub"><text x="248" y="40">sem rede</text><text x="418" y="40">sem rede</text><text x="588" y="40">servidor do INPE</text><text x="758" y="40">servidor do INPE</text></g>
+  </svg></div>
+  <ol class="steps"><li><h4>Desenhe a área</h4><p>Clique em <b>Baixar dados TOPODATA por área</b>. No mapa, clique e arraste para desenhar um retângulo sobre a área de interesse. Pressione <code>Esc</code> para cancelar a seleção. Um clique sem arraste não define uma área válida.</p></li><li><h4>Confira a seleção</h4><p>No diálogo, confira a extensão geográfica e as quadrículas identificadas.</p></li><li><h4>Escolha a pasta e os produtos</h4><p>Escolha a pasta de destino e marque um ou mais produtos. Confira a quantidade de arquivos e os tamanhos informados pelo servidor; a consulta de tamanhos pode levar alguns segundos.</p></li><li><h4>Baixe e carregue</h4><p>Inicie o download. A execução ocorre em segundo plano para manter a interface do QGIS responsiva. Ao concluir, os rasters são carregados no projeto se a opção correspondente estiver habilitada.</p></li></ol>
+  <figure class="shot"><img src="../assets/img/dialogo_configuracao.jpg" alt="Janela do QGIS com o relevo da Paraíba e uma seleção tracejada laranja à esquerda; à direita, o diálogo do plugin pronto para baixar: extensão em graus, quatro quadrículas, pasta de destino, três produtos marcados e o resumo com 12 arquivos e 337,8 MB" loading="lazy">
+    <figcaption><b>Configuração.</b> Quatro quadrículas e três produtos: 12 arquivos e 337,8 MB, segundo os tamanhos informados pelo servidor do INPE antes do download.</figcaption></figure>
+  <figure class="shot"><img src="../assets/img/dialogo_execucao.jpg" alt="Diálogo na página de execução com Concluído com sucesso, barra de progresso em 100%, seis arquivos com a situação Baixado e os botões Abrir pasta de destino e Voltar à configuração; ao fundo, as quadrículas de Decliv. (A) carregadas no mapa" loading="lazy">
+    <figcaption><b>Execução.</b> Progresso geral, arquivo atual, a situação de cada arquivo e as ações finais.</figcaption></figure>
+  <div class="note tip">O tempo de transferência depende do número e do tamanho dos arquivos, da conexão e da disponibilidade do servidor. Selecionar muitos produtos para várias quadrículas pode resultar em um download volumoso. O resumo do plugin informa a quantidade e, quando possível, o tamanho total antes do início.</div>
+</div></section>
+
+<section id="produtos"><div class="wrap">
+  <p class="kicker k-sand">Produtos</p><h2>Os 16 produtos TOPODATA</h2>
+  <p class="intro">O TOPODATA publica 16 produtos por quadrícula, identificados por códigos. Os dados numéricos são distribuídos como valores reais de 32 bits (<code>Float32</code>); os produtos classificados usam valores inteiros de 8 bits (<code>Byte</code>/<code>UInt8</code>), conforme as características gerais informadas pelo INPE. <sup><a href="#ref-1">[1]</a></sup></p>
+  <figure class="shot"><img src="../assets/img/produtos.jpg" alt="Mosaico de 16 painéis com a mesma área da quadrícula 07S36_ (entre Itabaiana e Campina Grande) em cada produto: altitude, declividade, três classificações de declividade, curvaturas vertical e horizontal e suas classes, orientação, orientação em octantes, forma de terreno, relevo sombreado e divisores e talvegues" loading="lazy">
+    <figcaption>A mesma área da quadrícula <code>07S36_</code> (entre Itabaiana e Campina Grande, PB) nos 16 produtos. Classificados com as cores que o plugin aplica ao carregar; numéricos com rampas de cor escolhidas para a figura.</figcaption></figure>
+  <p>Os nomes abaixo descrevem o conteúdo dos produtos. Para interpretar limites de classe, convenções de sinal ou valores especiais, consulte a legenda e os metadados oficiais do produto. As cores aplicadas pelo plugin são uma configuração de simbologia no QGIS; não alteram os valores dos pixels.</p>
+  <div class="table"><table>
+    <tr><th>Produto</th><th>Código</th><th>Tipo e interpretação geral</th><th>Cores no QGIS</th><th class="num">Tamanho aprox. por quadrícula*</th></tr>
+    <tr><td><b>Altitude / altimetria numérica</b></td><td><code>ZN</code></td><td>Modelo digital de elevação (MDE) refinado; altitude ortométrica em metros, referenciada ao EGM96.</td><td><span class="small">cinza (padrão do QGIS)</span></td><td class="num">31–103 MB</td></tr>
+    <tr><td><b>Declividade numérica</b></td><td><code>SN</code></td><td>Inclinação da superfície em porcentagem (%).</td><td><span class="small">cinza (padrão do QGIS)</span></td><td class="num">31–113 MB</td></tr>
+    <tr><td><b>Declividade — classificação A</b></td><td><code>SA</code></td><td>Quatro classes; classificação associada a Marques (1971), atualizada em Lepsch et al. (1991).</td><td><span class="chips"><i style="background:#fff3c4"></i><i style="background:#f9bb5b"></i><i style="background:#d15231"></i><i style="background:#67001f"></i></span></td><td class="num">0,4–2,1 MB</td></tr>
+    <tr><td><b>Declividade — classificação B</b></td><td><code>SB</code></td><td>Sete classes, identificadas de A a G, segundo Lepsch et al. (1991).</td><td><span class="chips"><i style="background:#fff3c4"></i><i style="background:#fede88"></i><i style="background:#f9bb5b"></i><i style="background:#f08a3c"></i><i style="background:#d15231"></i><i style="background:#a42427"></i><i style="background:#67001f"></i></span></td><td class="num">0,6–3,2 MB</td></tr>
+    <tr><td><b>Declividade — classificação C</b></td><td><code>SC</code></td><td>Seis classes, de plano a escarpado, conforme EMBRAPA (1999).</td><td><span class="chips"><i style="background:#fff3c4"></i><i style="background:#fdd97c"></i><i style="background:#f5a74e"></i><i style="background:#de6835"></i><i style="background:#b02b29"></i><i style="background:#67001f"></i></span></td><td class="num">0,4–2,9 MB</td></tr>
+    <tr><td><b>Curvatura vertical numérica</b></td><td><code>VN</code></td><td>Curvatura do perfil do terreno; valores e convenção de sinal conforme a definição do TOPODATA. Unidade indicada pelo guia: graus por metro (°/m).</td><td><span class="small">cinza (padrão do QGIS)</span></td><td class="num">32–118 MB</td></tr>
+    <tr><td><b>Curvatura vertical — 3 classes</b></td><td><code>V3</code></td><td>Vertentes côncavas, retilíneas e convexas.</td><td><span class="chips"><i style="background:#2166ac"></i><i style="background:#f7f7f7"></i><i style="background:#b35806"></i></span></td><td class="num">0,4–3,1 MB</td></tr>
+    <tr><td><b>Curvatura vertical — 5 classes</b></td><td><code>V5</code></td><td>Classes graduais de concavidade e convexidade, incluindo a classe retilínea.</td><td><span class="chips"><i style="background:#2166ac"></i><i style="background:#92c5de"></i><i style="background:#f7f7f7"></i><i style="background:#f4a582"></i><i style="background:#b35806"></i></span></td><td class="num">1,5–5,3 MB</td></tr>
+    <tr><td><b>Curvatura horizontal numérica</b></td><td><code>HN</code></td><td>Curvatura em planta; descreve convergência ou divergência das linhas de fluxo. Unidade indicada pelo guia: graus por metro (°/m).</td><td><span class="small">cinza (padrão do QGIS)</span></td><td class="num">20–69 MB</td></tr>
+    <tr><td><b>Curvatura horizontal — 3 classes</b></td><td><code>H3</code></td><td>Áreas convergentes, planares e divergentes.</td><td><span class="chips"><i style="background:#3a9a5b"></i><i style="background:#f7f7f7"></i><i style="background:#9a5bb0"></i></span></td><td class="num">1,7–5,3 MB</td></tr>
+    <tr><td><b>Curvatura horizontal — 5 classes</b></td><td><code>H5</code></td><td>Classes graduais de convergência e divergência.</td><td><span class="chips"><i style="background:#3a9a5b"></i><i style="background:#b8e3b1"></i><i style="background:#f7f7f7"></i><i style="background:#d4bde0"></i><i style="background:#9a5bb0"></i></span></td><td class="num">1,8–5,9 MB</td></tr>
+    <tr><td><b>Orientação de vertentes numérica</b></td><td><code>ON</code></td><td>Azimute da direção de máxima declividade, entre 0° e 360°, segundo a convenção do produto.</td><td><span class="small">cinza (padrão do QGIS)</span></td><td class="num">31–114 MB</td></tr>
+    <tr><td><b>Orientação de vertentes — octantes</b></td><td><code>OC</code></td><td>Oito classes direcionais: N, NE, E, SE, S, SW, W e NW.</td><td><span class="chips"><i style="background:#d7301f"></i><i style="background:#f28e2b"></i><i style="background:#fdd835"></i><i style="background:#8cc152"></i><i style="background:#2e9e5b"></i><i style="background:#2bb3c0"></i><i style="background:#3a6fb0"></i><i style="background:#8e5bb5"></i></span></td><td class="num">3,3–10 MB</td></tr>
+    <tr><td><b>Forma de terreno</b></td><td><code>FT</code></td><td>Classificação de formas de terreno derivada da combinação das curvaturas vertical e horizontal.</td><td><span class="chips"><i style="background:#1f78b4"></i><i style="background:#a6cee3"></i><i style="background:#6a3d9a"></i><i style="background:#33a02c"></i><i style="background:#b2df8a"></i><i style="background:#cab2d6"></i><i style="background:#e31a1c"></i><i style="background:#fb9a99"></i><i style="background:#ff7f00"></i></span></td><td class="num">1,9–7,7 MB</td></tr>
+    <tr><td><b>Relevo sombreado (<i>hillshade</i>)</b></td><td><code>RS</code></td><td>Representação tonal do relevo produzida por iluminação simulada; não é uma medida de altitude.</td><td><span class="small">cinza (padrão do QGIS)</span></td><td class="num">28–107 MB</td></tr>
+    <tr><td><b>Divisores e talvegues</b></td><td><code>DD</code></td><td>Produto para apoiar a identificação de linhas de drenagem (talvegues) e divisores de água, combinado à informação de orientação conforme o método TOPODATA.</td><td><span class="grad" style="background:linear-gradient(90deg,#e98d84,#f0a787,#f8c18a,#fbd58d,#feea90,#dfe398,#c0dda0,#a6d4a2,#8ccaa5,#8bcfc1,#8ad5dc,#8ec2d8,#93b0d4,#aaaad5,#c1a5d6,#d599ad)"></span> <span class="chips"><i style="background:#08306b"></i><i style="background:#a50f15"></i></span></td><td class="num">4,1–13 MB</td></tr>
+  </table></div>
+  <p class="small">* Faixas observadas para quatro quadrículas de dimensões distintas (<code>01N495</code>, <code>09S375</code>, <code>23S465</code>, <code>33S54_</code>). Não são limites garantidos para todas as quadrículas ou versões. Antes do download, o plugin consulta o <code>Content-Length</code> informado pelo servidor, quando disponível; sem resposta confiável, o tamanho aparece como indisponível, e não como um valor inferido.</p>
+  <h3>Observações sobre unidades e interpretação</h3>
+  <ul class="plain"><li>A declividade numérica <code>SN</code> é apresentada em <b>porcentagem</b>, não em graus. A relação entre porcentagem e ângulo não é linear; 100% corresponde a uma inclinação de 45°.</li><li>Orientação (<i>aspect</i>) é um azimute associado à direção de máxima descida da vertente. Não deve ser confundida com orientação cartográfica ou direção do norte do mapa.</li><li>Curvatura vertical e horizontal descrevem aspectos diferentes da forma da superfície. A vertical caracteriza a forma em perfil; a horizontal caracteriza a convergência ou divergência em planta. O sinal deve ser interpretado segundo a convenção do produto, não presumido a partir de outro software.</li><li>Para curvaturas, a documentação oficial do TOPODATA informa unidade angular por metro. Não converta nem compare diretamente os valores com curvaturas calculadas por outro algoritmo sem verificar a definição matemática, a escala, as unidades e o método de derivação. <sup><a href="#ref-1">[1]</a> <a href="#ref-2">[2]</a></sup></li><li>Os códigos dos produtos são identificadores do TOPODATA. As letras “A”, “B” e “C” distinguem classificações, não versões de qualidade do dado.</li><li>As cores são convenções de visualização. Consulte as classes e a legenda oficial antes de realizar interpretação temática.</li></ul>
+</div></section>
+
+<section id="como-funciona"><div class="wrap">
+  <p class="kicker k-orange">Consulta espacial e downloads</p><h2>Como funciona a consulta espacial e o download</h2>
+  <p class="intro">Quais quadrículas entram, como a contagem e o tamanho são calculados, como um download é validado e como os arquivos chegam ao projeto.</p>
+
+  <h3>Interseção com a grade</h3>
+  <p>O complemento inclui uma grade local (<code>grade_topodata.geojson</code>) com 556 polígonos em EPSG:4326 e os campos <code>scene</code> e <code>url</code>. O índice espacial seleciona candidatos pela extensão; cada candidato é então testado contra a geometria real do retângulo usando a relação topológica <code>intersects</code>.</p>
+  <div class="grid c2" style="align-items:center">
+    <div class="diagram"><svg viewBox="0 0 460 300" role="img" aria-label="Regra de interseção: quatro quadrículas; o retângulo A cruza duas e entra nas duas; o retângulo B toca a borda de uma quadrícula vizinha, que também entra; o retângulo C dentro de uma quadrícula só entra nela">
+      <g stroke-width="2"><rect class="b-card" x="20" y="20" width="210" height="130"/><rect class="b-card" x="230" y="20" width="210" height="130"/><rect class="b-card" x="20" y="150" width="210" height="130"/><rect class="b-card" x="230" y="150" width="210" height="130"/></g>
+      <g font-size="13" font-weight="700" class="t-sub"><text x="30" y="40">06S375</text><text x="240" y="40">06S36_</text><text x="30" y="170">07S375</text><text x="240" y="170">07S36_</text></g>
+      <rect x="150" y="70" width="140" height="55" rx="3" fill="none" class="ln-orange" stroke-width="3" stroke-dasharray="8 5"/><text x="220" y="103" text-anchor="middle" font-weight="800" class="t-orange">A</text>
+      <rect x="230" y="200" width="90" height="55" rx="2" fill="none" class="ln-green" stroke-width="3" stroke-dasharray="8 5"/><text x="275" y="233" text-anchor="middle" font-weight="800" class="t-green">B</text>
+      <rect x="70" y="200" width="90" height="55" rx="2" fill="none" class="ln-red" stroke-width="3" stroke-dasharray="8 5"/><text x="115" y="233" text-anchor="middle" font-weight="800" class="t-red">C</text>
+    </svg></div>
+    <div><p>Com essa regra, uma quadrícula é selecionada quando sua geometria compartilha qualquer porção com o retângulo, <b>inclusive uma interseção apenas por borda ou vértice</b>.</p><ul class="plain"><li><b class="k-orange">A</b> cruza a divisa entre <code>06S375</code> e <code>06S36_</code>: entram as duas.</li><li><b class="k-green">B</b> está dentro de <code>07S36_</code>, com a borda oeste exatamente na divisa: <code>07S375</code>, apenas tocada, também entra.</li><li><b class="k-red">C</b> está inteiro em <code>07S375</code>: só ela entra.</li></ul><p class="small">As geometrias das quadrículas podem ultrapassar ligeiramente os limites nominais da articulação; por isso, quadrículas adjacentes podem ser selecionadas perto de uma divisa.</p></div>
+  </div>
+  <h3>Seleção em outros sistemas de referência</h3>
+  <p>A seleção é desenhada no SRC do projeto e transformada para EPSG:4326 antes da consulta. Para evitar tratar o retângulo projetado como uma simples caixa em coordenadas geográficas, sua borda é densificada (32 vértices extras por lado) antes da transformação. O diálogo apresenta a caixa envolvente geográfica da área selecionada.</p>
+
+  <h3>Contagem e tamanho dos arquivos</h3>
+  <dl class="facts"><dt>Arquivos</dt><dd>A contagem é feita a partir dos pares produto–quadrícula e das URLs resolvidas pela grade. URLs repetidas são contadas uma única vez. Se uma URL ou identificador não seguir o padrão reconhecido, o plugin informa o item e não tenta adivinhar seu endereço.</dd><dt>Tamanho</dt><dd>O plugin envia requisições HTTP <code>HEAD</code> ao servidor, sem transferir o conteúdo raster. Quando o servidor retorna <code>Content-Length</code>, esse valor representa o tamanho anunciado para a resposta. Vários arquivos são consultados em paralelo e os resultados ficam em cache durante a sessão.</dd><dt>Sem resposta</dt><dd>Se algumas respostas não estiverem disponíveis, o plugin apresenta o subtotal conhecido e identifica o total como indisponível ou mínimo conhecido.</dd><dt>Aviso de volume</dt><dd>A partir de 40 arquivos ou 5 GB, o resumo apresenta um aviso e solicita confirmação. Esses limites são avisos de usabilidade; não garantem duração, disponibilidade ou espaço livre suficiente.</dd></dl>
+
+  <h3>Integridade, repetição e retomada</h3>
+  <div class="diagram" style="margin:18px 0"><svg viewBox="0 0 1000 300" role="img" aria-label="Download validado: os dados vão para o arquivo .part; ao fim, tamanho e cabeçalho GeoTIFF são conferidos e só então o arquivo recebe o nome final. Em falha temporária há nova tentativa com Range e If-Range; se o servidor confirmar com 206 e Content-Range o trecho é anexado, senão o download recomeça. Ao cancelar, o .part pode ficar para retomar depois">
+    <defs><marker id="ah2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ah" d="M0 0L10 5L0 10z"/></marker></defs>
+    <g stroke-width="2"><rect class="b-blue" x="10" y="40" width="160" height="76" rx="12"/><rect class="b-orange" x="220" y="40" width="190" height="76" rx="12"/><rect class="b-sand" x="460" y="40" width="210" height="76" rx="12"/><rect class="b-green" x="720" y="40" width="270" height="76" rx="12"/>
+      <rect class="b-red" x="220" y="190" width="190" height="80" rx="12"/><rect class="b-blue" x="460" y="190" width="210" height="80" rx="12"/><rect class="b-card" x="720" y="190" width="270" height="80" rx="12"/></g>
+    <g class="ln" stroke-width="3"><path d="M170 78H216" marker-end="url(#ah2)"/><path d="M410 78H456" marker-end="url(#ah2)"/><path d="M670 78H716" marker-end="url(#ah2)"/><path d="M315 116V186" marker-end="url(#ah2)" stroke-dasharray="6 5"/><path d="M410 230H456" marker-end="url(#ah2)"/><path d="M565 190V120" marker-end="url(#ah2)"/><path d="M670 230H716" marker-end="url(#ah2)" stroke-dasharray="6 5"/></g>
+    <g text-anchor="middle" font-size="15" font-weight="700"><text x="90" y="73">GET</text><text x="315" y="73">07S36_ZN.tif.part</text><text x="565" y="73">validar</text><text x="855" y="73">07S36_ZN.tif</text><text x="315" y="224">falha temporária</text><text x="565" y="224">Range + If-Range</text><text x="855" y="224">cancelar</text></g>
+    <g text-anchor="middle" font-size="12" class="t-sub"><text x="90" y="95">servidor do INPE</text><text x="315" y="95">+ .part.json (metadados)</text><text x="565" y="95">tamanho = Content-Length · GeoTIFF</text><text x="855" y="95">nome final</text><text x="315" y="246">conexão, tempo, 408/425/429/5xx</text><text x="315" y="262">até 4 tentativas: 2, 5, 10 s</text><text x="565" y="246">206 e Content-Range conferem?</text><text x="565" y="262">sim: anexa · não: reinicia</text><text x="855" y="246">.part mantido para retomar</text><text x="855" y="262">arquivos concluídos preservados</text></g>
+  </svg></div>
+  <ul class="plain"><li><b>Nome final só após validação.</b> Os dados são gravados inicialmente em arquivos parciais <code>.part</code>. O nome final só é aplicado após a comparação do tamanho recebido com o tamanho anunciado e uma verificação do cabeçalho GeoTIFF. Essa checagem reduz o risco de tratar uma página de erro ou uma transferência incompleta como raster válido; ela não substitui uma validação integral por checksum, que o servidor não fornece.</li><li><b>Retomada validada.</b> Para retomar um arquivo parcial, o plugin guarda metadados em <code>.part.json</code> e usa os cabeçalhos <code>Range</code> e <code>If-Range</code>. Os bytes só são anexados se a resposta indicar suporte à faixa (<code>206 Partial Content</code>) e se <code>Content-Range</code> confirmar o ponto inicial e o tamanho total esperados. Caso contrário, o arquivo parcial é descartado e o download reinicia, sem anexação insegura.</li><li><b>Repetições limitadas.</b> Falhas temporárias — perda de conexão, tempo esgotado ou respostas HTTP 408, 425, 429 e 5xx — recebem até quatro tentativas, com intervalos de 2, 5 e 10 segundos. Erros definitivos, como 403 ou 404, não são repetidos automaticamente.</li><li><b>Cancelamento.</b> Arquivos concluídos são preservados. O arquivo em andamento pode permanecer como <code>.part</code> para uma tentativa posterior, se seus metadados permitirem retomada segura. Arquivos não iniciados são identificados como cancelados.</li><li><b>Nova execução.</b> Arquivos existentes são reutilizados se passarem pelas verificações; o usuário pode optar por baixá-los novamente.</li></ul>
+
+  <h3>Carregamento no QGIS</h3>
+  <p>Quando <b>Carregar as imagens no QGIS ao concluir</b> está habilitado, cada arquivo disponível é adicionado como uma camada raster separada em um grupo chamado <b>TOPODATA</b>. O nome da camada combina o nome do arquivo e o rótulo do produto, por exemplo <code>07S36_SA — Decliv. (A)</code>.</p>
+  <p>O carregamento não mosaica, recorta nem reprojeta os dados. Camadas que não puderem ser abertas são informadas com o motivo, e arquivos já carregados no projeto não são adicionados novamente. A simbologia aplicada às camadas classificadas é apenas uma representação visual no projeto QGIS: não modifica os valores armazenados no GeoTIFF e pode ser alterada nas propriedades da camada.</p>
+  <figure class="shot"><img src="../assets/img/camadas.jpg" alt="Painel de camadas do QGIS com o grupo TOPODATA e seis camadas, duas por produto; ao lado, as duas quadrículas de cada produto lado a lado no mapa, cada uma uma camada própria, com cores por classe" loading="lazy">
+    <figcaption>Seis arquivos, seis camadas: duas quadrículas (<code>07S375</code> e <code>07S36_</code>) de três produtos. Sem mosaico, recorte nem reprojeção — a divisa entre as quadrículas continua visível.</figcaption></figure>
+</div></section>
+
+<section id="dados"><div class="wrap">
+  <p class="kicker k-green">Dados e limitações</p><h2>Dados TOPODATA</h2>
+  <p class="intro">O TOPODATA é derivado de dados da missão SRTM, coletados em fevereiro de 2000 por interferometria de radar de abertura sintética (<i>InSAR</i>), na banda C. <sup><a href="#ref-1">[1]</a></sup></p>
+  <div class="grid c4"><div class="card"><p class="stat k-green">1″</p><p>pixel de 1 segundo de arco (~30 m no Equador), interpolado por krigagem a partir do SRTM de 3″</p></div><div class="card"><p class="stat k-orange">556</p><p>quadrículas de 1° × 1,5°, compatíveis com a articulação 1:250.000</p></div><div class="card"><p class="stat k-blue">4326</p><p>coordenadas geográficas WGS 84; altitudes ortométricas (EGM96)</p></div><div class="card"><p class="stat k-sand">1:100.000</p><p>escala de trabalho indicada para o TOPODATA</p></div></div>
+
+  <h3>Origem, sistema de referência e significado do pixel</h3>
+  <p>O conjunto é disponibilizado em coordenadas geográficas, com datum horizontal WGS 84 (EPSG:4326), e altitudes ortométricas referenciadas ao modelo geoidal EGM96. A articulação nacional é organizada em quadrículas de 1° de latitude por 1,5° de longitude, compatíveis com a articulação cartográfica 1:250.000. <sup><a href="#ref-1">[1]</a></sup></p>
+  <p>O tamanho de pixel de 1 segundo de arco corresponde a aproximadamente 30 m no Equador. Como o pixel é definido em coordenadas angulares, sua dimensão linear leste–oeste diminui com a latitude. Além disso, o refinamento de 3 para 1 segundo de arco é uma interpolação por krigagem orientada a favorecer as derivações geomorfométricas; ele não equivale à aquisição de observações independentes com espaçamento original de 30 m, nem comprova acurácia de 30 m. <sup><a href="#ref-1">[1]</a> <a href="#ref-2">[2]</a></sup></p>
+  <p>A escala de trabalho indicada para o TOPODATA é 1:100.000. Essa indicação não deve ser interpretada como garantia de acurácia posicional uniforme, como escala apropriada para todo tipo de aplicação ou como consequência automática do espaçamento de pixel. Avalie a adequação do produto à escala, ao relevo, à cobertura da superfície e ao objetivo da análise. <sup><a href="#ref-1">[1]</a></sup></p>
+
+  <h3>Limitações do SRTM e interpretação como modelo de elevação</h3>
+  <div class="note warn"><b>Modelo de superfície, não de terreno.</b> O INPE caracteriza a origem SRTM como modelo digital de superfície (MDS), não como modelo digital de terreno (MDT). O radar de banda C interage com a vegetação e com estruturas construídas; a elevação estimada pode refletir o centro de fase do sinal dentro do volume de vegetação, e não necessariamente o terreno nu ou o topo do dossel. A resposta varia com a estrutura e as propriedades da cobertura. Em áreas urbanas, edificações também podem influenciar os valores. <sup><a href="#ref-1">[1]</a></sup></div>
+  <p>Por isso, a camada <code>ZN</code> deve ser tratada como modelo de elevação derivado do SRTM, com limitações próprias de uma observação por radar e do processamento do TOPODATA. Não a descreva como um MDT de terreno nu nem assuma que a altura coincide com o topo da copa. Para estudos que dependem da elevação do solo sob vegetação, avalie uma fonte concebida para esse objetivo e valide os dados com referências independentes.</p>
+
+  <h3>Produtos e processamento geomorfométrico</h3>
+  <p>O TOPODATA deriva variáveis como declividade, orientação de vertentes, curvatura vertical e horizontal a partir do MDE refinado. O processamento foi desenvolvido para esse conjunto de dados e inclui procedimentos próprios de derivação e pós-processamento. Portanto, recalcular essas variáveis em outro SIG a partir do raster <code>ZN</code> pode produzir resultados diferentes dos produtos publicados pelo INPE. <sup><a href="#ref-1">[1]</a> <a href="#ref-2">[2]</a></sup></p>
+  <p>O relevo sombreado é uma visualização de iluminação simulada e não deve ser usado como substituto de um modelo altimétrico. Produtos classificados condensam intervalos ou combinações de variáveis em códigos discretos; para interpretação quantitativa, use a legenda e a documentação oficial correspondentes.</p>
+
+  <h3>Referência e citação dos dados</h3>
+  <p>O plugin não é um produto do INPE. Ele automatiza o acesso a arquivos disponibilizados pelo TOPODATA. Ao utilizar os dados, cite o TOPODATA/INPE e a referência metodológica pertinente:</p>
+  <blockquote class="note">Valeriano, M. M.; Rossetti, D. F. <i>Topodata: Brazilian full coverage refinement of SRTM data</i>. Applied Geography, v. 32, n. 2, p. 300–309, 2012. <a href="https://doi.org/10.1016/j.apgeog.2011.05.004">https://doi.org/10.1016/j.apgeog.2011.05.004</a></blockquote>
+  <p>Consulte também a <a href="https://data.inpe.br/dados/topodata/">página oficial do TOPODATA no INPE</a> para informações atualizadas sobre dados, produtos, acesso e simbologia.</p>
+</div></section>
+
+<section id="ajuda"><div class="wrap">
+  <p class="kicker k-red">Solução de problemas</p><h2>Problemas comuns</h2>
+  <p class="intro">Cada mensagem do plugin traz uma explicação curta; o detalhe técnico fica em <b>Detalhes técnicos</b> e em <i>Exibir → Painéis → Mensagens de log</i>, aba <i>TOPODATA Downloader</i>.</p>
+  <details><summary>O tamanho aparece como “não disponível”</summary><div><p>A requisição <code>HEAD</code> não retornou um tamanho utilizável para um ou mais arquivos. Verifique o acesso à internet, o proxy do QGIS e a disponibilidade do servidor. Use <b>Consultar tamanhos novamente</b> quando a conexão estiver restabelecida. O download pode ser iniciado mesmo sem conhecer previamente o tamanho total.</p></div></details>
+  <details><summary>Não foi possível conectar ao servidor do INPE</summary><div><p>Confirme que a rede permite acessar <code>data.inpe.br</code>. Verifique se há um proxy ativado no QGIS e se suas configurações ainda são válidas. Falhas temporárias são repetidas segundo os limites descritos em <a href="#como-funciona">Integridade, repetição e retomada</a>.</p></div></details>
+  <details><summary>Há arquivos <code>.part</code> e <code>.part.json</code> na pasta</summary><div><p>Esses arquivos indicam uma transferência interrompida ou incompleta. Uma nova execução pode retomar a transferência se os metadados e a resposta do servidor permitirem confirmar a continuidade; caso contrário, o plugin reinicia o arquivo. Os arquivos parciais podem ser removidos manualmente se não houver intenção de retomar o download; não apague arquivos finais que já foram validados.</p></div></details>
+  <details><summary>O arquivo aparece como “Já existia (verificado)”</summary><div><p>O arquivo de destino já existia e passou pelos critérios de validação do plugin. Para transferi-lo novamente, marque <b>Baixar novamente arquivos que já existem na pasta</b>.</p></div></details>
+  <details><summary>Produtos classificados aparecem escuros ou quase pretos</summary><div><p>A aparência depende da simbologia associada ao raster e do modo como o QGIS interpreta os valores. Use a opção de carregamento do plugin para aplicar o estilo previsto ou configure a simbologia em <i>Propriedades da camada → Simbologia</i>. A simbologia não altera os valores do arquivo. Confirme a legenda do produto antes de atribuir significado às cores.</p></div></details>
+  <details><summary>Quanto tempo leva?</summary><div><p>O tempo depende do número de arquivos, do tamanho de cada produto, da largura de banda e da disponibilidade do servidor. A faixa de tamanho por produto na tabela serve apenas como referência; consulte os valores apresentados pelo plugin para a seleção atual.</p></div></details>
+  <details><summary>Fechei o diálogo durante o download</summary><div><p>O plugin pede confirmação; confirme o cancelamento apenas se desejar interromper a tarefa. Arquivos já concluídos permanecem disponíveis; a transferência em andamento pode deixar um arquivo parcial para retomada posterior.</p></div></details>
+</div></section>
+
+<section id="autor"><div class="wrap">
+  <p class="kicker k-green">Sobre o autor</p>
+  <div class="author">
+    <img src="../assets/img/author.jpg" alt="Foto de Marcello Benigno" width="200" height="200"
+      loading="lazy">
+    <div>
+      <h2>Marcello Benigno</h2>
+      <p class="role">Professor do Curso Superior de Tecnologia em Geoprocessamento do Instituto Federal da Paraíba (IFPB).</p>
+      <p>É mestre em Ciências Geodésicas e Tecnologias da Geoinformação pela UFPE e engenheiro civil pela UFCG. Atua há mais de 20 anos no ensino e no desenvolvimento de soluções geotecnológicas de código aberto.</p><p>Sua experiência inclui desenvolvimento de <b>WebGIS</b> e automação espacial com Python — especialmente PyQGIS, OSMnx, NetworkX e Django —, desenvolvimento de aplicações cartográficas para a web com Leaflet e Vue.js, modelagem de bancos de dados geográficos e arquiteturas em Linux.</p>
+      <p class="links"><a class="chip" href="https://github.com/marcellobenigno">GitHub</a><a class="chip" href="https://linkedin.com/in/marcellobenigno">LinkedIn</a><a class="chip" href="mailto:marcello@ifpb.edu.br">E-mail</a></p>
+    </div>
+  </div>
+</div></section>
+
+<section id="referencias"><div class="wrap">
+  <p class="kicker k-sand">Referências</p>
+  <ol class="plain"><li id="ref-1">[1] <a href="https://data.inpe.br/dados/topodata/">TOPODATA — Banco de Dados Geomorfométricos do Brasil</a>. INPE.</li><li id="ref-2">[2] <a href="https://idesisema.meioambiente.mg.gov.br/geonetwork/srv/api/records/75c14312-6bb9-47c2-ad0f-ce36d48ecaf3/attachments/guia_utilizacao_dados_topodata.pdf">TOPODATA: Guia para utilização de dados geomorfométricos</a>.</li></ol>
+</div></section>
+
+<footer><div class="wrap">
+  <span>Dados: TOPODATA, Instituto Nacional de Pesquisas Espaciais (INPE). As figuras foram produzidas com o plugin usando dados da Paraíba; limites estaduais: Natural Earth.</span>
+  <span>Plugin sob licença GPL-2.0-or-later. · <a href="https://github.com/marcellobenigno/topodata-downloader">GitHub</a> · <a href="https://github.com/marcellobenigno/topodata-downloader/issues">Issues</a></span>
+</div></footer>
+<script src="../assets/site.js"></script>
+</body>
+</html>
