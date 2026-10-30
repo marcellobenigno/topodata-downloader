@@ -18,7 +18,7 @@
 
   document.querySelectorAll(".lang a").forEach(function (a) {
     a.addEventListener("click", function () {
-      try { localStorage.setItem("osmnx-doc-lang", a.dataset.lang); } catch (e) { /* private mode */ }
+      try { localStorage.setItem("topodata-doc-lang", a.dataset.lang); } catch (e) { /* private mode */ }
     });
   });
 
