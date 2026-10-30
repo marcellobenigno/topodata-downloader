@@ -27,17 +27,18 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .catalog import META_SUFFIX, PART_SUFFIX
+from .translation import N_, tr
 
 USER_AGENT = "QGIS-TOPODATA-Downloader/0.1"
 TIFF_MAGICS = (b"II*\x00", b"MM\x00*", b"II+\x00", b"MM\x00+")      # TIFF e BigTIFF
 RETRYABLE_HTTP = (408, 425, 429, 500, 502, 503, 504)
 
 DONE, EXISTING, FAILED, CANCELED = "concluido", "existente", "falhou", "cancelado"
-STATUS_LABELS = {
-    DONE: "Baixado",
-    EXISTING: "Já existia (verificado)",
-    FAILED: "Falhou",
-    CANCELED: "Cancelado",
+STATUS_LABELS = {                                   # traduzidos com tr() onde são exibidos
+    DONE: N_("Downloaded"),
+    EXISTING: N_("Already existed (verified)"),
+    FAILED: N_("Failed"),
+    CANCELED: N_("Canceled"),
 }
 
 
@@ -87,33 +88,33 @@ def build_opener(proxies=None):
 
 
 def classify(err):
-    """Converte exceções de rede em DownloadError com mensagem em português."""
+    """Converte exceções de rede em DownloadError com mensagem amigável (traduzida)."""
     if isinstance(err, DownloadError):
         return err
     detail = "{}: {}".format(type(err).__name__, err)
     if isinstance(err, urllib.error.HTTPError):
         if err.code == 404:
-            return DownloadError("Arquivo não encontrado no servidor (HTTP 404).", detail)
+            return DownloadError(tr("File not found on the server (HTTP 404)."), detail)
         if err.code in (401, 403):
-            return DownloadError("O servidor recusou o acesso ao arquivo (HTTP {}).".format(
+            return DownloadError(tr("The server refused access to the file (HTTP {}).").format(
                 err.code), detail)
-        return DownloadError("O servidor respondeu com erro HTTP {} ({}).".format(
+        return DownloadError(tr("The server responded with HTTP error {} ({}).").format(
             err.code, err.reason), detail, retryable=err.code in RETRYABLE_HTTP)
     if isinstance(err, urllib.error.URLError):
         reason = err.reason
         if isinstance(reason, (socket.timeout, TimeoutError)):
-            return DownloadError("Tempo de espera esgotado ao conectar ao servidor.", detail,
+            return DownloadError(tr("Timed out while connecting to the server."), detail,
                                  retryable=True)
-        return DownloadError("Não foi possível conectar ao servidor do INPE. Verifique a "
-                             "conexão com a internet ou o proxy do QGIS.", detail,
+        return DownloadError(tr("Could not connect to the INPE server. Check the internet "
+                                "connection or the QGIS proxy."), detail,
                              retryable=True)
     if isinstance(err, (socket.timeout, TimeoutError)):
-        return DownloadError("Tempo de espera esgotado: o servidor parou de enviar dados.",
+        return DownloadError(tr("Timed out: the server stopped sending data."),
                              detail, retryable=True)
     if isinstance(err, (ConnectionError, http.client.HTTPException)):
-        return DownloadError("A conexão com o servidor foi interrompida.", detail,
+        return DownloadError(tr("The connection to the server was interrupted."), detail,
                              retryable=True)
-    return DownloadError("Erro de comunicação com o servidor.", detail, retryable=True)
+    return DownloadError(tr("Error communicating with the server."), detail, retryable=True)
 
 
 def parse_content_range(value):
@@ -239,16 +240,15 @@ class Downloader:
                 try:
                     size = head(url, self.opener, self.timeout, self.user_agent)
                 except DownloadError as err:
-                    note = "Não foi possível verificar o arquivo existente ({}).".format(
-                        err.message)
+                    note = tr("Could not check the existing file ({}).").format(err.message)
             if size is not None and os.path.getsize(path) == size and looks_like_tiff(path):
                 _remove(part, meta)                 # parcial antigo do mesmo arquivo
                 return Result(url, path, EXISTING, size,
-                              "Arquivo existente com o mesmo tamanho do servidor; reutilizado.")
+                              tr("Existing file with the same size as on the server; reused."))
             if size is not None:
-                note = ("O arquivo existente estava incompleto ou diferente do servidor "
-                        "({} bytes no disco, {} no servidor).".format(os.path.getsize(path),
-                                                                      size))
+                note = tr("The existing file was incomplete or different from the server "
+                          "({} bytes on disk, {} on the server).").format(os.path.getsize(path),
+                                                                          size)
 
         attempts, resumed, last = 0, False, None
         while attempts < self.max_attempts:
@@ -272,32 +272,32 @@ class Downloader:
             try:
                 os.replace(part, path)
             except OSError as err:
-                last = DownloadError("Não foi possível renomear o arquivo baixado para o nome "
-                                     "final.", "{}: {}".format(type(err).__name__, err))
+                last = DownloadError(tr("Could not rename the downloaded file to its final name."),
+                                     "{}: {}".format(type(err).__name__, err))
                 break
             _remove(meta)
-            msg = "Baixado com retomada de um parcial anterior." if resumed else "Baixado."
+            msg = tr("Downloaded, resuming a previous partial file.") if resumed else tr("Downloaded.")
             if not verified:
-                msg += " O servidor não informou o tamanho; integridade não verificada."
+                msg += " " + tr("The server did not report the size; integrity not verified.")
             if note:
-                msg += " " + note + " Substituído."
+                msg += " " + note + " " + tr("Replaced.")
             return Result(url, path, DONE, size, msg, attempts=attempts, resumed=resumed)
 
-        message = last.message if last else "Falha desconhecida."
+        message = last.message if last else tr("Unknown failure.")
         if attempts > 1:
-            message += " ({} tentativas.)".format(attempts)
+            message += " " + tr("({} attempts.)").format(attempts)
         if os.path.exists(part):
-            message += " O parcial foi mantido para retomar depois."
+            message += " " + tr("The partial file was kept to resume later.")
         if note:
-            message += " " + note + " O arquivo existente não foi alterado."
+            message += " " + note + " " + tr("The existing file was not changed.")
         return Result(url, path, FAILED, None, message, last.detail if last else "",
                       attempts=attempts, resumed=resumed)
 
     # ------------------------------------------------------------- internos
     def _canceled_result(self, url, path, attempts, resumed):
-        msg = "Cancelado pelo usuário."
+        msg = tr("Canceled by the user.")
         if os.path.exists(path + PART_SUFFIX):
-            msg += " O parcial (.part) foi mantido para retomar depois."
+            msg += " " + tr("The partial file (.part) was kept to resume later.")
         return Result(url, path, CANCELED, None, msg, attempts=attempts, resumed=resumed)
 
     def _wait(self, seconds):
@@ -336,8 +336,8 @@ class Downloader:
             resp = self.opener.open(req, timeout=self.timeout)
         except urllib.error.HTTPError as err:
             if err.code == 416:
-                raise DownloadError("O servidor recusou a retomada do parcial; o download "
-                                    "será reiniciado.", "HTTP 416", retryable=True,
+                raise DownloadError(tr("The server refused to resume the partial file; the "
+                                       "download will restart."), "HTTP 416", retryable=True,
                                     discard_partial=True)
             raise classify(err)
         except (urllib.error.URLError, OSError, http.client.HTTPException) as err:
@@ -352,9 +352,9 @@ class Downloader:
                 if (rng is None or rng[0] != offset or rng[2] != state["total"]
                         or (validator and validator != state["validator"])):
                     raise DownloadError(
-                        "A resposta do servidor à retomada não confere com o parcial; o "
-                        "download será reiniciado do início.",
-                        "Content-Range={!r}, esperado início {} e total {}".format(
+                        tr("The server's response to the resume does not match the partial "
+                           "file; the download will restart from the beginning."),
+                        "Content-Range={!r}, expected start {} and total {}".format(
                             resp.headers.get("Content-Range"), offset, state["total"]),
                         retryable=True, discard_partial=True)
                 total, mode, resumed = state["total"], "ab", True
@@ -367,7 +367,7 @@ class Downloader:
                 else:
                     _remove(meta)
             else:
-                raise DownloadError("Resposta inesperada do servidor (HTTP {}).".format(status),
+                raise DownloadError(tr("Unexpected server response (HTTP {}).").format(status),
                                     retryable=False, discard_partial=True)
 
             received = offset
@@ -376,7 +376,7 @@ class Downloader:
             try:
                 f = open(part, mode)
             except OSError as err:
-                raise DownloadError("Não foi possível gravar na pasta de destino.",
+                raise DownloadError(tr("Could not write to the destination folder."),
                                     "{}: {}".format(type(err).__name__, err))
             with f:
                 while True:
@@ -391,11 +391,11 @@ class Downloader:
                     try:
                         f.write(chunk)
                     except OSError as err:
-                        raise DownloadError("Erro ao gravar no disco (espaço ou permissão).",
+                        raise DownloadError(tr("Error writing to disk (space or permission)."),
                                             "{}: {}".format(type(err).__name__, err))
                     received += len(chunk)
                     if total is not None and received > total:
-                        raise DownloadError("O servidor enviou mais dados que o anunciado.",
+                        raise DownloadError(tr("The server sent more data than announced."),
                                             retryable=True, discard_partial=True)
                     if on_progress:
                         on_progress(received, total)
@@ -405,9 +405,9 @@ class Downloader:
             resp.close()
 
         if total is not None and received != total:
-            raise DownloadError("Transferência incompleta: {} de {} bytes recebidos.".format(
+            raise DownloadError(tr("Incomplete transfer: {} of {} bytes received.").format(
                 received, total), retryable=True)
         if not looks_like_tiff(part):
-            raise DownloadError("O conteúdo recebido não é um GeoTIFF; o arquivo foi "
-                                "descartado.", discard_partial=True)
+            raise DownloadError(tr("The content received is not a GeoTIFF; the file was "
+                                   "discarded."), discard_partial=True)
         return received, resumed, total is not None

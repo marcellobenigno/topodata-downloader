@@ -12,6 +12,7 @@ from qgis.core import QgsPointXY, QgsRectangle
 from qgis.gui import QgsMapTool, QgsRubberBand
 
 from .compat import CROSS_CURSOR, GEOM_POLYGON, KEY_ESCAPE, LEFT
+from .translation import tr
 
 MIN_DRAG_PX = 4
 FILL = QColor(255, 140, 0, 50)
@@ -74,8 +75,8 @@ class RectangleTool(QgsMapTool):
         self._start = self._start_px = None
         self.band.reset(GEOM_POLYGON)
         if abs(moved.x()) < MIN_DRAG_PX or abs(moved.y()) < MIN_DRAG_PX:
-            self.invalid.emit("Retângulo muito pequeno: clique e arraste para desenhar a área "
-                              "de interesse.")
+            self.invalid.emit(tr("Rectangle too small: click and drag to draw the area of "
+                                 "interest."))
             return
         self.selected.emit(rect)
 

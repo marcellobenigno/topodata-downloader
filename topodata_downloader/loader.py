@@ -8,6 +8,7 @@ from qgis.core import QgsProject, QgsRasterLayer
 
 from .catalog import PRODUCT_BY_CODE
 from .styles import apply_class_style
+from .translation import tr
 
 GROUP = "TOPODATA"
 
@@ -17,10 +18,10 @@ def _key(path):
 
 
 def layer_name(path):
-    """'07S36_ZN' -> '07S36_ZN — Altitude' (o nome original é preservado)."""
+    """'07S36_ZN' -> '07S36_ZN — Elevation' (o nome original é preservado)."""
     stem = os.path.splitext(os.path.basename(path))[0]
     product = PRODUCT_BY_CODE.get(stem[-2:])
-    return "{} — {}".format(stem, product.label) if product else stem
+    return "{} — {}".format(stem, tr(product.label)) if product else stem
 
 
 def loaded_paths(project=None):
@@ -43,12 +44,12 @@ def add_rasters(paths, project=None, group_name=GROUP):
             skipped.append(path)
             continue
         if not os.path.isfile(path):
-            failed.append((path, "Arquivo não encontrado no disco."))
+            failed.append((path, tr("File not found on disk.")))
             continue
         layer = QgsRasterLayer(path, layer_name(path), "gdal")
         if not layer.isValid():
-            reason = layer.error().summary() or "formato não reconhecido"
-            failed.append((path, "O QGIS/GDAL não conseguiu abrir o arquivo: {}".format(reason)))
+            reason = layer.error().summary() or tr("unrecognized format")
+            failed.append((path, tr("QGIS/GDAL could not open the file: {}").format(reason)))
             continue
         apply_class_style(layer)
         if group is None:

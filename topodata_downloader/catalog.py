@@ -18,45 +18,49 @@ plano e é informada ao usuário.
 import os
 from collections import OrderedDict, namedtuple
 
+from .translation import N_, number, tr
+
 Product = namedtuple("Product", "code label description")
 
-# Ordem e códigos = seletor da página do INPE; rótulos = pedido do projeto (pt-BR).
+# Ordem e códigos = seletor da página do INPE. Rótulos e descrições em inglês, traduzidos com
+# tr() onde são exibidos.
 PRODUCTS = (
-    Product("ZN", "Altitude",
-            "Altimetria numérica: modelo digital de elevação refinado, altitudes ortométricas "
-            "em metros (EGM96). Dado primário de onde derivam as demais variáveis."),
-    Product("SN", "Declividade",
-            "Declividade numérica, em porcentagem."),
-    Product("SA", "Decliv. (A)",
-            "Declividade em 4 classes (Marques, 1971; Lepsch et al., 1991)."),
-    Product("SB", "Decliv. (B)",
-            "Declividade em 7 classes, de A a G (Lepsch et al., 1991)."),
-    Product("SC", "Decliv. (C)",
-            "Declividade em 6 classes (EMBRAPA, 1999): plano a escarpado."),
-    Product("VN", "Curv. vertical",
-            "Curvatura vertical numérica (°/m): convexidade (+) ou concavidade (−) em perfil."),
-    Product("V3", "Curv. vertical — 3 classes",
-            "Curvatura vertical em 3 classes: côncava, retilínea e convexa."),
-    Product("V5", "Curv. vertical — 5 classes",
-            "Curvatura vertical em 5 intervalos."),
-    Product("HN", "Curv. horizontal",
-            "Curvatura horizontal numérica (°/m): convergência (−) ou divergência (+) do "
-            "escoamento."),
-    Product("H3", "Curv. horizontal — 3 classes",
-            "Curvatura horizontal em 3 classes: convergente, planar e divergente."),
-    Product("H5", "Curv. horizontal — 5 classes",
-            "Curvatura horizontal em 5 intervalos."),
-    Product("ON", "Orientação",
-            "Orientação de vertentes numérica: azimute da máxima declividade (0° a 360°)."),
-    Product("OC", "Orientação — octantes",
-            "Orientação de vertentes em 8 direções: N, NE, E, SE, S, SW, W e NW."),
-    Product("FT", "Forma de terreno",
-            "Forma do terreno: 9 classes combinando curvatura vertical e horizontal."),
-    Product("RS", "Relevo sombreado",
-            "Relevo sombreado (hillshade)."),
-    Product("DD", "Divisores e talvegues",
-            "Delineamento de microbacias (processo ADD): talvegues e divisores sobre a "
-            "orientação em 16 semioctantes."),
+    Product("ZN", N_("Elevation"),
+            N_("Numerical altimetry: refined digital elevation model, orthometric heights in "
+               "metres (EGM96). Primary data from which the other variables are derived.")),
+    Product("SN", N_("Slope"),
+            N_("Numerical slope, in percent.")),
+    Product("SA", N_("Slope (A)"),
+            N_("Slope in 4 classes (Marques, 1971; Lepsch et al., 1991).")),
+    Product("SB", N_("Slope (B)"),
+            N_("Slope in 7 classes, A to G (Lepsch et al., 1991).")),
+    Product("SC", N_("Slope (C)"),
+            N_("Slope in 6 classes (EMBRAPA, 1999): flat to escarpment.")),
+    Product("VN", N_("Vertical curvature"),
+            N_("Numerical vertical curvature (°/m): convexity (+) or concavity (−) in "
+               "profile.")),
+    Product("V3", N_("Vertical curvature — 3 classes"),
+            N_("Vertical curvature in 3 classes: concave, rectilinear and convex.")),
+    Product("V5", N_("Vertical curvature — 5 classes"),
+            N_("Vertical curvature in 5 intervals.")),
+    Product("HN", N_("Horizontal curvature"),
+            N_("Numerical horizontal curvature (°/m): convergence (−) or divergence (+) of "
+               "the flow.")),
+    Product("H3", N_("Horizontal curvature — 3 classes"),
+            N_("Horizontal curvature in 3 classes: convergent, planar and divergent.")),
+    Product("H5", N_("Horizontal curvature — 5 classes"),
+            N_("Horizontal curvature in 5 intervals.")),
+    Product("ON", N_("Aspect"),
+            N_("Numerical slope aspect: azimuth of the steepest slope (0° to 360°).")),
+    Product("OC", N_("Aspect — octants"),
+            N_("Slope aspect in 8 directions: N, NE, E, SE, S, SW, W and NW.")),
+    Product("FT", N_("Landform"),
+            N_("Landform: 9 classes combining vertical and horizontal curvature.")),
+    Product("RS", N_("Shaded relief"),
+            N_("Shaded relief (hillshade).")),
+    Product("DD", N_("Ridges and drainage lines"),
+            N_("Micro-basin delineation (ADD process): drainage lines and ridges over the "
+               "aspect in 16 semi-octants.")),
 )
 PRODUCT_BY_CODE = OrderedDict((p.code, p) for p in PRODUCTS)
 
@@ -80,10 +84,10 @@ class CatalogError(ValueError):
 def product_url(grid_url, scene, code):
     """URL do produto ``code`` para a folha ``scene``, a partir da URL ``ZN`` da grade."""
     if code not in PRODUCT_BY_CODE:
-        raise CatalogError("Produto desconhecido: {}".format(code))
+        raise CatalogError(tr("Unknown product: {}").format(code))
     name = grid_url.rsplit("/", 1)[-1]
     if not grid_url.startswith(("https://", "http://")) or name != scene + GRID_SUFFIX:
-        raise CatalogError("A URL da folha {} não segue o padrão '<folha>{}': {}".format(
+        raise CatalogError(tr("The URL of tile {} does not follow the pattern '<tile>{}': {}").format(
             scene, GRID_SUFFIX, grid_url))
     return grid_url[:-len(GRID_SUFFIX)] + code + ".tif"
 
@@ -173,9 +177,10 @@ class SizeSummary:
 
 
 def format_bytes(n):
-    """Tamanho legível em pt-BR, unidades decimais (1 MB = 1.000.000 bytes)."""
+    """Tamanho legível, unidades decimais (1 MB = 1.000.000 bytes); vírgula decimal conforme
+    o idioma da interface."""
     if n is None:
-        return "não disponível"
+        return tr("not available")
     units = ("bytes", "kB", "MB", "GB", "TB")
     value, unit = float(n), units[0]
     for unit in units:
@@ -184,12 +189,12 @@ def format_bytes(n):
         value /= 1000.0
     if unit == "bytes":
         return "{} bytes".format(int(n))
-    return "{:.1f} {}".format(value, unit).replace(".", ",")
+    return number("{:.1f} {}".format(value, unit))
 
 
 def format_degrees(value):
-    """Grau decimal com vírgula, 5 casas (~1 m)."""
-    return "{:.5f}°".format(value).replace(".", ",")
+    """Grau decimal, 5 casas (~1 m); vírgula decimal conforme o idioma da interface."""
+    return number("{:.5f}°".format(value))
 
 
 def is_large(plan, summary=None):
@@ -205,15 +210,15 @@ def describe_destination(path):
     Retorna (ok, mensagem); a mensagem também informa quando a pasta será criada."""
     path = (path or "").strip()
     if not path:
-        return False, "Escolha a pasta onde os arquivos serão salvos."
+        return False, tr("Choose the folder where the files will be saved.")
     if not os.path.isabs(path):
-        return False, "Informe o caminho completo da pasta (ex.: começando pela unidade ou /)."
+        return False, tr("Enter the full path of the folder (e.g. starting with the drive or /).")
     if os.path.isdir(path):
         if not os.access(path, os.W_OK):
-            return False, "Sem permissão para gravar nesta pasta. Escolha outra."
+            return False, tr("No permission to write to this folder. Choose another one.")
         return True, ""
     if os.path.exists(path):
-        return False, "O caminho aponta para um arquivo, não para uma pasta."
+        return False, tr("The path points to a file, not to a folder.")
     parent = path
     while parent and not os.path.exists(parent):
         up = os.path.dirname(parent)
@@ -221,8 +226,8 @@ def describe_destination(path):
             break
         parent = up
     if not os.path.isdir(parent) or not os.access(parent, os.W_OK):
-        return False, "A pasta não existe e não pode ser criada em '{}'.".format(parent)
-    return True, "A pasta não existe e será criada ao iniciar o download."
+        return False, tr("The folder does not exist and cannot be created in '{}'.").format(parent)
+    return True, tr("The folder does not exist and will be created when the download starts.")
 
 
 def check_destination(path):
@@ -233,22 +238,22 @@ def check_destination(path):
     """
     path = (path or "").strip()
     if not path:
-        return False, "Escolha a pasta onde os arquivos serão salvos."
+        return False, tr("Choose the folder where the files will be saved.")
     if not os.path.isabs(path):
-        return False, "Informe o caminho completo da pasta (ex.: começando pela unidade ou /)."
+        return False, tr("Enter the full path of the folder (e.g. starting with the drive or /).")
     if os.path.exists(path) and not os.path.isdir(path):
-        return False, "O caminho aponta para um arquivo, não para uma pasta."
+        return False, tr("The path points to a file, not to a folder.")
     try:
         os.makedirs(path, exist_ok=True)
     except OSError as err:
-        return False, "Não foi possível criar a pasta: {}".format(err.strerror or err)
+        return False, tr("Could not create the folder: {}").format(err.strerror or err)
     probe = os.path.join(path, ".topodata_teste_escrita.tmp")
     try:
         with open(probe, "wb") as f:
             f.write(b"ok")
         os.remove(probe)
     except OSError as err:
-        return False, "Sem permissão para gravar nesta pasta: {}".format(err.strerror or err)
+        return False, tr("No permission to write to this folder: {}").format(err.strerror or err)
     return True, ""
 
 

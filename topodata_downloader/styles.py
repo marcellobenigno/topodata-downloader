@@ -12,6 +12,8 @@ divisores). 0 = sem dado.
 from qgis.PyQt.QtGui import QColor
 from qgis.core import QgsPalettedRasterRenderer
 
+from .translation import tr
+
 SLOPE = ("#fff3c4", "#fdd36a", "#f08a3c", "#c2362b", "#67001f")
 VERTICAL = ("#2166ac", "#92c5de", "#f7f7f7", "#f4a582", "#b35806")     # côncava -> convexa
 HORIZONTAL = ("#3a9a5b", "#b8e3b1", "#f7f7f7", "#d4bde0", "#9a5bb0")   # converg. -> diverg.
@@ -71,7 +73,7 @@ def apply_class_style(layer, code=None):
     colors = CLASS_COLORS.get(code)
     if not colors or layer.bandCount() != 1:
         return False
-    classes = [QgsPalettedRasterRenderer.Class(i + 1, c, "Classe {}".format(i + 1))
+    classes = [QgsPalettedRasterRenderer.Class(i + 1, c, tr("Class {}").format(i + 1))
                for i, c in enumerate(colors)]
     layer.setRenderer(QgsPalettedRasterRenderer(layer.dataProvider(), 1, classes))
     layer.triggerRepaint()

@@ -13,6 +13,7 @@ from qgis.core import QgsMessageLog, QgsSettings, QgsTask
 
 from . import downloader as D
 from .compat import MSG_INFO, MSG_WARNING, TASK_CAN_CANCEL
+from .translation import tr
 
 LOG_TAG = "TOPODATA Downloader"
 PROGRESS_INTERVAL = 0.15                       # s entre avisos de progresso de um arquivo
@@ -46,7 +47,7 @@ class SizeProbeTask(QgsTask):
     sizeReady = pyqtSignal(str, object, str)       # url, bytes ou None, erro ("" = ok)
 
     def __init__(self, urls, opener=None, workers=6):
-        super().__init__("TOPODATA: consultando tamanhos dos arquivos", TASK_CAN_CANCEL)
+        super().__init__(tr("TOPODATA: checking file sizes"), TASK_CAN_CANCEL)
         self.urls = list(urls)
         self.opener = opener
         self.workers = workers
@@ -80,7 +81,8 @@ class DownloadTask(QgsTask):
 
     def __init__(self, items, folder, sizes=None, overwrite=False, opener=None,
                  downloader_options=None):
-        super().__init__("TOPODATA: baixando {} arquivo(s)".format(len(items)), TASK_CAN_CANCEL)
+        super().__init__(tr("TOPODATA: downloading {} file(s)").format(len(items)),
+                         TASK_CAN_CANCEL)
         self.items = list(items)
         self.folder = folder
         self.sizes = dict(sizes or {})
@@ -139,8 +141,8 @@ class DownloadTask(QgsTask):
         for i, item in enumerate(self.items):
             if self.results[i] is None:
                 self.results[i] = D.Result(item.url, os.path.join(self.folder, item.filename),
-                                           D.CANCELED, message="Não iniciado: download "
-                                           "cancelado antes deste arquivo.")
+                                           D.CANCELED, message=tr("Not started: download "
+                                                                  "canceled before this file."))
                 self.fileFinished.emit(i, self.results[i])
         return True
 

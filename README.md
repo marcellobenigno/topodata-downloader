@@ -10,11 +10,14 @@ cancelamento, e opcionalmente carrega cada arquivo como camada raster separada.
 O plugin **baixa os GeoTIFF originais do INPE**. Ele não cria mosaicos, não recorta, não
 reprojeta e não processa os dados.
 
-Interface em português do Brasil. Fonte dos dados: <https://data.inpe.br/dados/topodata/>.
+Interface em inglês, com tradução para o português do Brasil, escolhida conforme o idioma
+do QGIS (os nomes de botões citados abaixo são os da tradução). Fonte dos dados:
+<https://data.inpe.br/dados/topodata/>.
 
 ## Instalação
 
-1. Gere o ZIP: `python scripts/make_zip.py` (cria `dist/topodata_downloader-0.1.0.zip`).
+1. Gere o ZIP: `python scripts/make_zip.py` (cria `dist/topodata_downloader-<versão>.zip`; compila as
+   traduções com o `lrelease`, ou use `--no-i18n` para usar os `.qm` já incluídos).
 2. No QGIS: *Complementos → Gerenciar e instalar complementos → Instalar a partir de ZIP*.
    Escolha o ZIP e confirme. Como o plugin é experimental, marque *Mostrar também
    complementos experimentais* nas configurações do gerenciador, se ele não aparecer.
@@ -199,9 +202,12 @@ topodata_downloader/        o plugin (esta pasta vai no ZIP)
   dialog.py                 diálogo (configuração / execução)
   plugin.py                 botão, menu e ligação entre ferramenta e diálogo
   compat.py                 enums compatíveis com Qt5 (QGIS 3) e Qt6 (QGIS 4)
+  translation.py            tr() / N_() e vírgula decimal conforme o idioma da tradução
+  i18n/                     traduções compiladas (.ts/.qm), geradas de translations/
   data/grade_topodata.geojson
+translations/pt_BR.json     tradução: {"texto em inglês": "tradução"}
 tests/                      test_core.py (sem QGIS), test_qgis.py e test_plugin.py (QGIS headless)
-scripts/make_zip.py, build_docs_figures.py
+scripts/make_zip.py, build_translations.py, build_docs_figures.py
 docs/                       worktree do branch gh-pages (site de documentação)
 ```
 
@@ -210,6 +216,17 @@ sem QGIS, `compat.py` com `_first` para Qt5/Qt6, `qgisMinimumVersion=3.28`, test
 com `os._exit` no fim, `make_zip.py`, sem `try/except/pass`. Do `OSMDownloader` (GPL, Luiz
 Andrade) veio a ideia do fluxo "desenhar retângulo → diálogo com a extensão"; o código foi
 escrito do zero (o original grava direto no arquivo final e não valida o download).
+
+## Traduções
+
+Os textos da interface estão em inglês no código, marcados com `tr("...")` (ou `N_("...")`
+nas constantes, traduzidas com `tr()` onde são exibidas). Para mudar ou acrescentar uma
+tradução, edite `translations/<idioma>.json` (mantenha os `{marcadores}`) e rode
+`python scripts/build_translations.py` (ou `make translations`; precisa do `lrelease` do Qt,
+no PATH ou na variável `LRELEASE`). O script recusa traduções faltando ou com marcadores
+diferentes e gera `topodata_downloader/i18n/topodata_downloader_<idioma>.ts/.qm`. Para um
+novo idioma, copie `translations/pt_BR.json` para `translations/<idioma>.json` e traduza os
+valores.
 
 ## Testes
 
@@ -231,9 +248,9 @@ No macOS o Python do QGIS.app precisa de `PYTHONHOME` e `PYTHONPATH` apontando p
 executando `QGIS.app/Contents/MacOS/python3.12`; o pytest pode ser instalado numa pasta à
 parte (`pip install --target <pasta> pytest`) adicionada ao `PYTHONPATH`.
 
-### Resultado (26/10/2026, QGIS 3.44.8, Qt 5.15.18, Python 3.12.11, macOS)
+### Resultado (30/10/2026, QGIS 3.44.8, Qt 5.15.18, Python 3.12.11, macOS)
 
-`68 passed` (37 em `test_core.py`, 26 em `test_qgis.py`, 5 em `test_plugin.py`); `flake8
+`70 passed` (38 em `test_core.py`, 26 em `test_qgis.py`, 6 em `test_plugin.py`); `flake8
 --max-line-length 110` sem avisos; `compileall` com Python 3.8 sem erros.
 
 | Requisito | Teste |
@@ -300,8 +317,8 @@ Faça no QGIS de verdade, com tela:
 2. Faça o commit e envie a tag com o mesmo número:
    `git tag -a X.Y.Z -m "TOPODATA Downloader X.Y.Z" && git push origin X.Y.Z`.
 
-O workflow `.github/workflows/release.yml` confere a versão, roda os testes sem QGIS, gera o
-ZIP, cria a release no GitHub (notas do CHANGELOG, ZIP anexado) e publica no
+O workflow `.github/workflows/release.yml` confere a versão, roda os testes sem QGIS, confere
+e compila as traduções, gera o ZIP, cria a release no GitHub (notas do CHANGELOG, ZIP anexado) e publica no
 plugins.qgis.org com o secret `QGIS_TOKEN` (token do plugin; sem ele, essa etapa é pulada).
 
 ## Licença

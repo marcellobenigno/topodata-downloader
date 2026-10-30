@@ -2,21 +2,32 @@
 """Ponto de entrada do plugin: botão/menu, ferramenta de seleção e diálogo."""
 import os
 
+from qgis.PyQt.QtCore import QCoreApplication, QLocale, QTranslator
 from qgis.PyQt.QtGui import QIcon
-from qgis.core import QgsMessageLog
+from qgis.core import QgsMessageLog, QgsSettings
 
+from . import translation
 from .compat import MSG_CRITICAL, MSG_INFO, MSG_WARNING, QAction
 from .grid import GridError, TopodataGrid
+from .translation import tr
 
 MENU = "TOPODATA Downloader"
 TITLE = "TOPODATA Downloader"
 FOLDER = os.path.dirname(__file__)
-HINT = "Desenhe um retângulo no mapa (clique e arraste) sobre a área de interesse. Esc cancela."
 
 
 def icon():
     svg = os.path.join(FOLDER, "icons", "icon.svg")
     return QIcon(svg if os.path.exists(svg) else os.path.join(FOLDER, "icons", "icon.png"))
+
+
+def _locale():
+    """Idioma da interface do QGIS (Configurações > Opções > Geral), ex.: 'pt_BR'."""
+    s = QgsSettings()
+    loc = ""
+    if s.value("locale/overrideFlag", False, type=bool):
+        loc = s.value("locale/userLocale", "") or ""
+    return loc or QLocale().name()
 
 
 class TopodataDownloaderPlugin:
@@ -28,14 +39,30 @@ class TopodataDownloaderPlugin:
         self.band = None
         self._grid = None
         self._previous_tool = None
+        self.translator = None
+        self._load_translation()
+
+    def _load_translation(self):
+        """Tradução da interface conforme o idioma do QGIS; sem arquivo, fica em inglês."""
+        loc = _locale()
+        candidates = [loc, loc[:2]] + (["pt_BR"] if loc.startswith("pt") else [])
+        for code in candidates:
+            path = os.path.join(FOLDER, "i18n", "topodata_downloader_{}.qm".format(code))
+            if os.path.exists(path):
+                self.translator = QTranslator()
+                if self.translator.load(path):
+                    QCoreApplication.installTranslator(self.translator)
+                    translation.set_language(code)
+                break
 
     # ------------------------------------------------------------------ QGIS
     def initGui(self):
-        self.action = QAction(icon(), "Baixar dados TOPODATA por área", self.iface.mainWindow())
+        self.action = QAction(icon(), tr("Download TOPODATA data by area"),
+                              self.iface.mainWindow())
         self.action.setObjectName("topodata_downloader_action")
-        self.action.setToolTip("TOPODATA: desenhe um retângulo no mapa para baixar as "
-                               "quadrículas de altitude, declividade, curvaturas e outros "
-                               "produtos do INPE")
+        self.action.setToolTip(tr("TOPODATA: draw a rectangle on the map to download the "
+                                  "elevation, slope, curvature and other INPE products for "
+                                  "the tiles it covers"))
         self.action.setCheckable(True)
         self.action.triggered.connect(self.toggle_tool)
         self.iface.addToolBarIcon(self.action)
@@ -56,13 +83,17 @@ class TopodataDownloaderPlugin:
             self.iface.removeToolBarIcon(self.action)
             self.iface.removePluginRasterMenu(MENU, self.action)
             self.action = None
+        if self.translator is not None:
+            QCoreApplication.removeTranslator(self.translator)
+            self.translator = None
+            translation.set_language("")
 
     # ------------------------------------------------------------------ grade
     def grid(self):
         """Grade lida e indexada uma única vez por sessão."""
         if self._grid is None:
             self._grid = TopodataGrid()
-            QgsMessageLog.logMessage("Grade carregada: {} folhas ({}).".format(
+            QgsMessageLog.logMessage("Grid loaded: {} tiles ({}).".format(
                 len(self._grid), self._grid.path), TITLE, MSG_INFO)
         return self._grid
 
@@ -93,7 +124,9 @@ class TopodataDownloaderPlugin:
         self.action.setChecked(True)
         if self.dialog is not None and self.dialog.isVisible() and not self.dialog.is_busy():
             self.dialog.hide()
-        self.iface.messageBar().pushMessage(TITLE, HINT, MSG_INFO, 6)
+        self.iface.messageBar().pushMessage(
+            TITLE, tr("Draw a rectangle on the map (click and drag) over the area of interest. "
+                      "Esc cancels."), MSG_INFO, 6)
 
     def _deactivate_tool(self):
         canvas = self.iface.mapCanvas()
@@ -124,8 +157,8 @@ class TopodataDownloaderPlugin:
         dialog = self._ensure_dialog()
         if dialog.is_busy():
             self.iface.messageBar().pushMessage(
-                TITLE, "Há um download em andamento. Aguarde o fim ou cancele-o antes de "
-                "escolher outra área.", MSG_WARNING, 6)
+                TITLE, tr("A download is in progress. Wait for it to finish or cancel it "
+                          "before choosing another area."), MSG_WARNING, 6)
             dialog.show()
             dialog.raise_()
             return

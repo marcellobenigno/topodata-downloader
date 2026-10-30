@@ -23,6 +23,7 @@ from qgis.core import (QgsCoordinateTransform, QgsCsException, QgsFeatureRequest
 
 from .catalog import Tile
 from .compat import WGS84
+from .translation import tr
 
 DEFAULT_GRID = os.path.join(os.path.dirname(__file__), "data", "grade_topodata.geojson")
 REQUIRED_FIELDS = ("scene", "url")
@@ -50,20 +51,20 @@ class TopodataGrid:
     def __init__(self, path=DEFAULT_GRID):
         self.path = path
         if not os.path.isfile(path):
-            raise GridError("A grade TOPODATA não foi encontrada.", path)
+            raise GridError(tr("The TOPODATA grid was not found."), path)
         layer = QgsVectorLayer(path, "grade_topodata", "ogr")
         if not layer.isValid():
-            raise GridError("Não foi possível abrir a grade TOPODATA.",
+            raise GridError(tr("Could not open the TOPODATA grid."),
                             "{}: {}".format(path, layer.error().summary()))
         names = layer.fields().names()
         missing = [f for f in REQUIRED_FIELDS if f not in names]
         if missing:
-            raise GridError("A grade não tem os campos esperados ({}).".format(
-                ", ".join(missing)), "Campos encontrados: {}".format(", ".join(names)))
+            raise GridError(tr("The grid does not have the expected fields ({}).").format(
+                ", ".join(missing)), "Fields found: {}".format(", ".join(names)))
         transform = None
         if not _is_wgs84(layer.crs()):
             if not layer.crs().isValid():
-                raise GridError("A grade não informa o sistema de referência.", path)
+                raise GridError(tr("The grid does not specify its reference system."), path)
             transform = QgsCoordinateTransform(layer.crs(), WGS84, QgsProject.instance())
 
         self.tiles = {}
@@ -75,24 +76,24 @@ class TopodataGrid:
             url = str(feat["url"] or "").strip()
             geom = QgsGeometry(feat.geometry())
             if not scene or not url:
-                self.invalid.append((scene or "#{}".format(feat.id()), "sem scene/url"))
+                self.invalid.append((scene or "#{}".format(feat.id()), "no scene/url"))
                 continue
             if geom.isNull() or geom.isEmpty():
-                self.invalid.append((scene, "geometria vazia"))
+                self.invalid.append((scene, "empty geometry"))
                 continue
             if transform is not None:
                 geom.transform(transform)
             if not geom.isGeosValid():
                 geom = geom.makeValid()
                 if geom.isNull() or geom.isEmpty():
-                    self.invalid.append((scene, "geometria inválida"))
+                    self.invalid.append((scene, "invalid geometry"))
                     continue
             fid = feat.id()
             self.tiles[fid] = Tile(scene, url)
             self.geometries[fid] = geom
             self.index.addFeature(fid, geom.boundingBox())
         if not self.tiles:
-            raise GridError("A grade TOPODATA está vazia.", path)
+            raise GridError(tr("The TOPODATA grid is empty."), path)
 
     def __len__(self):
         return len(self.tiles)
@@ -122,11 +123,11 @@ def selection_to_wgs84(rect, crs, context=None):
 
     Lança SelectionError para retângulo vazio, SRC inválido ou falha de transformação."""
     if rect is None or rect.isNull() or rect.width() <= 0 or rect.height() <= 0:
-        raise SelectionError("O retângulo selecionado não tem área. Clique e arraste para "
-                             "desenhar uma área.")
+        raise SelectionError(tr("The selected rectangle has no area. Click and drag to draw "
+                                "an area."))
     if not crs.isValid():
-        raise SelectionError("O sistema de referência do mapa é inválido; defina o SRC do "
-                             "projeto e selecione de novo.")
+        raise SelectionError(tr("The map's reference system is invalid; set the project CRS "
+                                "and select again."))
     geom = QgsGeometry.fromRect(rect)
     if not _is_wgs84(crs):
         geom = geom.densifyByCount(DENSIFY)
@@ -134,15 +135,15 @@ def selection_to_wgs84(rect, crs, context=None):
         try:
             geom.transform(transform)
         except QgsCsException as err:
-            raise SelectionError("Não foi possível converter a seleção para coordenadas "
-                                 "geográficas (EPSG:4326): {}".format(err))
+            raise SelectionError(tr("Could not convert the selection to geographic "
+                                    "coordinates (EPSG:4326): {}").format(err))
     box = geom.boundingBox()
     values = (box.xMinimum(), box.yMinimum(), box.xMaximum(), box.yMaximum())
     if any(v != v or abs(v) == float("inf") for v in values):        # NaN / infinito
-        raise SelectionError("A conversão da seleção para EPSG:4326 gerou coordenadas "
-                             "inválidas. Selecione uma área menor ou mude o SRC do mapa.")
+        raise SelectionError(tr("Converting the selection to EPSG:4326 produced invalid "
+                                "coordinates. Select a smaller area or change the map CRS."))
     if box.xMinimum() < -180 or box.xMaximum() > 180 or box.yMinimum() < -90 \
             or box.yMaximum() > 90:
-        raise SelectionError("A seleção sai dos limites do globo (longitude −180° a 180°, "
-                             "latitude −90° a 90°).")
+        raise SelectionError(tr("The selection goes beyond the limits of the globe (longitude "
+                                "−180° to 180°, latitude −90° to 90°)."))
     return geom

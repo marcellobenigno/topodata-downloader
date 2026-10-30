@@ -32,25 +32,26 @@ from .compat import (ALIGN_RIGHT, ALIGN_VCENTER, CHECKED, DIRECTORY_MODE,
 from .grid import GridError, SelectionError, selection_to_wgs84
 from .loader import add_rasters
 from .tasks import DownloadTask, SizeProbeTask
+from .translation import N_, tr
 
 SETTINGS = "topodata_downloader/"
 
-# Estados visíveis
+# Estados visíveis (textos traduzidos com tr() em _set_state)
 WAITING, QUERYING, NO_TILES, ERROR, INCOMPLETE, READY = range(6)
 DOWNLOADING, CANCELING, CANCELED, DONE, PARTIAL = range(6, 11)
 BUSY = (DOWNLOADING, CANCELING)
 STATE_TEXT = {
-    WAITING: "Aguardando seleção no mapa",
-    QUERYING: "Consultando a grade TOPODATA…",
-    NO_TILES: "Nenhuma quadrícula TOPODATA na área selecionada",
-    ERROR: "Não foi possível consultar a área",
-    INCOMPLETE: "Falta configurar o download",
-    READY: "Pronto para baixar",
-    DOWNLOADING: "Baixando…",
-    CANCELING: "Cancelando… aguardando o fim do bloco de dados em andamento",
-    CANCELED: "Download cancelado",
-    DONE: "Concluído com sucesso",
-    PARTIAL: "Concluído parcialmente",
+    WAITING: N_("Waiting for a selection on the map"),
+    QUERYING: N_("Querying the TOPODATA grid…"),
+    NO_TILES: N_("No TOPODATA tile in the selected area"),
+    ERROR: N_("Could not query the area"),
+    INCOMPLETE: N_("The download is not fully set up"),
+    READY: N_("Ready to download"),
+    DOWNLOADING: N_("Downloading…"),
+    CANCELING: N_("Canceling… waiting for the current block of data to finish"),
+    CANCELED: N_("Download canceled"),
+    DONE: N_("Completed successfully"),
+    PARTIAL: N_("Partially completed"),
 }
 STATE_MARK = {NO_TILES: "⚠", ERROR: "✖", INCOMPLETE: "•", READY: "✔", CANCELED: "■",
               DONE: "✔", PARTIAL: "⚠"}
@@ -81,7 +82,7 @@ class DownloadDialog(QDialog):
         GridError)."""
         super().__init__(parent)
         self.setObjectName("TopodataDownloaderDialog")
-        self.setWindowTitle("TOPODATA — download por área")
+        self.setWindowTitle(tr("TOPODATA — download by area"))
         self.setSizeGripEnabled(True)
         self.resize(720, 760)
         self.grid_provider = grid_provider
@@ -121,18 +122,18 @@ class DownloadDialog(QDialog):
         # faixa de situação + detalhes técnicos
         self.status = QLabel()
         self.status.setWordWrap(True)
-        self.status.setAccessibleName("Situação")
+        self.status.setAccessibleName(tr("Status"))
         self.status.setTextInteractionFlags(TEXT_SELECTABLE | TEXT_KEYBOARD)
         self.status_detail = _label(selectable=True)
         self.details_button = QToolButton()
-        self.details_button.setText("Detalhes técnicos")
+        self.details_button.setText(tr("Technical details"))
         self.details_button.setCheckable(True)
-        self.details_button.setAccessibleName("Mostrar detalhes técnicos")
-        self.copy_button = QPushButton("Copiar detalhes")
+        self.details_button.setAccessibleName(tr("Show technical details"))
+        self.copy_button = QPushButton(tr("Copy details"))
         self.copy_button.clicked.connect(self._copy_details)
         self.details = QPlainTextEdit()
         self.details.setReadOnly(True)
-        self.details.setAccessibleName("Detalhes técnicos")
+        self.details.setAccessibleName(tr("Technical details"))
         self.details.setMaximumHeight(140)
         self.details.setVisible(False)
         self.details_button.toggled.connect(self.details.setVisible)
@@ -161,40 +162,40 @@ class DownloadDialog(QDialog):
         box.addWidget(scroll, 1)
 
         # --- área
-        area = QGroupBox("Área selecionada (coordenadas geográficas, EPSG:4326)")
+        area = QGroupBox(tr("Selected area (geographic coordinates, EPSG:4326)"))
         form = QFormLayout(area)
         self.west, self.south = _label(selectable=True), _label(selectable=True)
         self.east, self.north = _label(selectable=True), _label(selectable=True)
-        for text, lab in (("Oeste (longitude mínima):", self.west),
-                          ("Sul (latitude mínima):", self.south),
-                          ("Leste (longitude máxima):", self.east),
-                          ("Norte (latitude máxima):", self.north)):
+        for text, lab in ((tr("West (minimum longitude):"), self.west),
+                          (tr("South (minimum latitude):"), self.south),
+                          (tr("East (maximum longitude):"), self.east),
+                          (tr("North (maximum latitude):"), self.north)):
             form.addRow(text, lab)
         self.tile_count = _label(selectable=True)
-        form.addRow("Quadrículas encontradas:", self.tile_count)
+        form.addRow(tr("Tiles found:"), self.tile_count)
         self.tile_list = _label(selectable=True)
         form.addRow("", self.tile_list)
-        self.area_hint = _label(
-            "Quadrícula = folha TOPODATA de 1° de latitude × 1,5° de longitude (articulação "
-            "1:250.000). Entram todas as folhas que intersectam o retângulo, inclusive as "
-            "apenas tocadas pela borda.")
+        self.area_hint = _label(tr(
+            "Tile = TOPODATA sheet of 1° latitude × 1.5° longitude (1:250,000 index). All "
+            "sheets that intersect the rectangle are included, even those only touched by its "
+            "edge."))
         form.addRow(self.area_hint)
-        self.reselect_button = QPushButton("Refazer seleção no mapa")
-        self.reselect_button.setToolTip("Volta ao mapa para desenhar outro retângulo. Pasta, "
-                                        "produtos e opções são mantidos.")
+        self.reselect_button = QPushButton(tr("Select again on the map"))
+        self.reselect_button.setToolTip(tr("Returns to the map to draw another rectangle. "
+                                           "Folder, products and options are kept."))
         self.reselect_button.clicked.connect(self.reselectRequested.emit)
         form.addRow(self.reselect_button)
         lay.addWidget(area)
 
         # --- pasta
-        dest = QGroupBox("Pasta de destino")
+        dest = QGroupBox(tr("Destination folder"))
         dlay = QVBoxLayout(dest)
         self.folder = QgsFileWidget()
         self.folder.setStorageMode(DIRECTORY_MODE)
-        self.folder.setDialogTitle("Escolha a pasta de destino dos arquivos TOPODATA")
-        self.folder.setAccessibleName("Pasta de destino")
-        self.folder.setToolTip("Os arquivos são salvos com o nome original do INPE "
-                               "(ex.: 07S36_ZN.tif).")
+        self.folder.setDialogTitle(tr("Choose the destination folder for the TOPODATA files"))
+        self.folder.setAccessibleName(tr("Destination folder"))
+        self.folder.setToolTip(tr("Files are saved with their original INPE name "
+                                  "(e.g. 07S36_ZN.tif)."))
         self.folder.fileChanged.connect(self._refresh)
         self.folder_msg = _label()
         dlay.addWidget(self.folder)
@@ -202,17 +203,17 @@ class DownloadDialog(QDialog):
         lay.addWidget(dest)
 
         # --- produtos
-        prod = QGroupBox("Produtos")
+        prod = QGroupBox(tr("Products"))
         play = QVBoxLayout(prod)
         self.products = QListWidget()
-        self.products.setAccessibleName("Produtos TOPODATA")
-        self.products.setAccessibleDescription("Marque com a barra de espaço os produtos a "
-                                               "baixar.")
+        self.products.setAccessibleName(tr("TOPODATA products"))
+        self.products.setAccessibleDescription(tr("Check the products to download with the "
+                                                  "space bar."))
         self.products.setSelectionMode(SINGLE_SELECTION)
         for p in C.PRODUCTS:
-            it = QListWidgetItem("{}  ({})".format(p.label, p.code))
+            it = QListWidgetItem("{}  ({})".format(tr(p.label), p.code))
             it.setData(USER_ROLE, p.code)
-            it.setToolTip(p.description)
+            it.setToolTip(tr(p.description))
             it.setFlags(ITEM_ENABLED | ITEM_SELECTABLE | ITEM_CHECKABLE)
             it.setCheckState(UNCHECKED)
             self.products.addItem(it)
@@ -220,9 +221,9 @@ class DownloadDialog(QDialog):
         self.products.itemChanged.connect(self._refresh)
         play.addWidget(self.products)
         row = QHBoxLayout()
-        self.select_all = QPushButton("Selecionar todos")
+        self.select_all = QPushButton(tr("Select all"))
         self.select_all.clicked.connect(lambda: self._check_all(True))
-        self.clear_all = QPushButton("Limpar seleção")
+        self.clear_all = QPushButton(tr("Clear selection"))
         self.clear_all.clicked.connect(lambda: self._check_all(False))
         row.addWidget(self.select_all)
         row.addWidget(self.clear_all)
@@ -233,27 +234,29 @@ class DownloadDialog(QDialog):
         lay.addWidget(prod)
 
         # --- opções
-        opt = QGroupBox("Opções")
+        opt = QGroupBox(tr("Options"))
         olay = QVBoxLayout(opt)
-        self.load_check = QCheckBox("Carregar as imagens no QGIS ao concluir")
-        self.load_check.setToolTip("Cada arquivo vira uma camada raster separada, no grupo "
-                                   "TOPODATA. Nenhum mosaico, recorte ou reprojeção é feito.")
-        self.overwrite_check = QCheckBox("Baixar novamente arquivos que já existem na pasta")
-        self.overwrite_check.setToolTip(
-            "Desmarcado: um arquivo existente com o mesmo tamanho informado pelo servidor é "
-            "reutilizado. Marcado: é baixado de novo; o arquivo atual só é substituído quando "
-            "o novo estiver completo.")
+        self.load_check = QCheckBox(tr("Load the images into QGIS when finished"))
+        self.load_check.setToolTip(tr("Each file becomes a separate raster layer, in the "
+                                      "TOPODATA group. No mosaicking, clipping or reprojection "
+                                      "is done."))
+        self.overwrite_check = QCheckBox(tr("Download again files that already exist in the "
+                                            "folder"))
+        self.overwrite_check.setToolTip(tr(
+            "Unchecked: an existing file with the same size reported by the server is reused. "
+            "Checked: it is downloaded again; the current file is only replaced when the new "
+            "one is complete."))
         self.overwrite_check.toggled.connect(self._refresh)
         olay.addWidget(self.load_check)
         olay.addWidget(self.overwrite_check)
         lay.addWidget(opt)
 
         # --- resumo
-        summ = QGroupBox("Resumo antes do download")
+        summ = QGroupBox(tr("Summary before downloading"))
         slay = QVBoxLayout(summ)
         self.summary_table = QTableWidget(0, 3)
-        self.summary_table.setHorizontalHeaderLabels(["Produto", "Arquivos", "Tamanho"])
-        self.summary_table.setAccessibleName("Resumo por produto")
+        self.summary_table.setHorizontalHeaderLabels([tr("Product"), tr("Files"), tr("Size")])
+        self.summary_table.setAccessibleName(tr("Summary by product"))
         self.summary_table.setEditTriggers(NO_EDIT)
         self.summary_table.setSelectionBehavior(SELECT_ROWS)
         self.summary_table.verticalHeader().setVisible(False)
@@ -267,24 +270,24 @@ class DownloadDialog(QDialog):
         slay.addWidget(self.summary_text)
         self.size_method = _label(selectable=True)
         slay.addWidget(self.size_method)
-        self.retry_sizes = QPushButton("Consultar tamanhos novamente")
+        self.retry_sizes = QPushButton(tr("Check sizes again"))
         self.retry_sizes.clicked.connect(self._retry_sizes)
         self.retry_sizes.setVisible(False)
         slay.addWidget(self.retry_sizes)
         self.large_msg = _label()
         slay.addWidget(self.large_msg)
-        slay.addWidget(_label("A duração depende da sua conexão, do servidor do INPE e do "
-                              "volume de dados. Os arquivos originais são baixados sem "
-                              "mosaico, recorte ou reprojeção."))
+        slay.addWidget(_label(tr("The duration depends on your connection, the INPE server and "
+                                 "the volume of data. The original files are downloaded "
+                                 "without mosaicking, clipping or reprojection.")))
         lay.addWidget(summ)
         lay.addStretch(1)
 
         buttons = QHBoxLayout()
-        self.download_button = QPushButton("Baixar")
+        self.download_button = QPushButton(tr("Download"))
         self.download_button.setAutoDefault(False)
         self.download_button.setDefault(False)
         self.download_button.clicked.connect(self.start_download)
-        close = QPushButton("Fechar")
+        close = QPushButton(tr("Close"))
         close.setAutoDefault(False)
         close.clicked.connect(self.close)
         buttons.addStretch(1)
@@ -298,21 +301,22 @@ class DownloadDialog(QDialog):
         lay = QVBoxLayout(page)
         lay.setContentsMargins(0, 0, 0, 0)
         self.overall = QProgressBar()
-        self.overall.setAccessibleName("Progresso geral")
+        self.overall.setAccessibleName(tr("Overall progress"))
         self.overall_label = _label(selectable=True)
         self.file_label = _label(selectable=True)
         self.file_bar = QProgressBar()
-        self.file_bar.setAccessibleName("Progresso do arquivo atual")
-        lay.addWidget(QLabel("Progresso geral:"))
+        self.file_bar.setAccessibleName(tr("Current file progress"))
+        lay.addWidget(QLabel(tr("Overall progress:")))
         lay.addWidget(self.overall)
         lay.addWidget(self.overall_label)
-        lay.addWidget(QLabel("Arquivo atual:"))
+        lay.addWidget(QLabel(tr("Current file:")))
         lay.addWidget(self.file_label)
         lay.addWidget(self.file_bar)
 
         self.run_table = QTableWidget(0, 4)
-        self.run_table.setHorizontalHeaderLabels(["Arquivo", "Produto", "Situação", "Mensagem"])
-        self.run_table.setAccessibleName("Situação de cada arquivo")
+        self.run_table.setHorizontalHeaderLabels([tr("File"), tr("Product"), tr("Status"),
+                                                  tr("Message")])
+        self.run_table.setAccessibleName(tr("Status of each file"))
         self.run_table.setEditTriggers(NO_EDIT)
         self.run_table.setSelectionBehavior(SELECT_ROWS)
         self.run_table.verticalHeader().setVisible(False)
@@ -325,22 +329,22 @@ class DownloadDialog(QDialog):
         lay.addWidget(self.final_label)
 
         row = QHBoxLayout()
-        self.cancel_button = QPushButton("Cancelar download")
+        self.cancel_button = QPushButton(tr("Cancel download"))
         self.cancel_button.setAutoDefault(False)
         self.cancel_button.clicked.connect(self.cancel_download)
-        self.open_button = QPushButton("Abrir pasta de destino")
+        self.open_button = QPushButton(tr("Open destination folder"))
         self.open_button.setAutoDefault(False)
         self.open_button.clicked.connect(self.open_folder)
-        self.load_button = QPushButton("Carregar no QGIS")
+        self.load_button = QPushButton(tr("Load into QGIS"))
         self.load_button.setAutoDefault(False)
         self.load_button.clicked.connect(self.load_results)
-        self.back_button = QPushButton("Voltar à configuração")
+        self.back_button = QPushButton(tr("Back to setup"))
         self.back_button.setAutoDefault(False)
         self.back_button.clicked.connect(self.back_to_config)
         for b in (self.cancel_button, self.open_button, self.load_button, self.back_button):
             row.addWidget(b)
         row.addStretch(1)
-        close = QPushButton("Fechar")
+        close = QPushButton(tr("Close"))
         close.setAutoDefault(False)
         close.clicked.connect(self.close)
         row.addWidget(close)
@@ -365,8 +369,8 @@ class DownloadDialog(QDialog):
     def _set_state(self, state, detail="", technical=""):
         self.state = state
         mark = STATE_MARK.get(state, "")
-        self.status.setText("Situação: {}{}".format(mark + " " if mark else "",
-                                                    STATE_TEXT[state]))
+        self.status.setText(tr("Status: {}{}").format(mark + " " if mark else "",
+                                                      tr(STATE_TEXT[state])))
         font = self.status.font()
         font.setBold(True)
         self.status.setFont(font)
@@ -401,15 +405,15 @@ class DownloadDialog(QDialog):
             geom = selection_to_wgs84(rect, crs, context)
         except SelectionError as err:
             self._clear_area()
-            self._set_state(ERROR, str(err) + " Use “Refazer seleção no mapa”.")
+            self._set_state(ERROR, str(err) + " " + tr("Use “Select again on the map”."))
             return True
         try:
             grid = self.grid_provider()
             tiles = grid.query(geom)
         except GridError as err:
             self._clear_area()
-            self._set_state(ERROR, err.message + " Reinstale o plugin ou verifique o arquivo "
-                            "da grade.", err.detail)
+            self._set_state(ERROR, err.message + " " + tr("Reinstall the plugin or check the "
+                                                          "grid file."), err.detail)
             return True
         self.selection = geom
         self.tiles = tiles
@@ -464,7 +468,7 @@ class DownloadDialog(QDialog):
             scenes = ", ".join(t.scene for t in self.tiles)
             per_tile = set(self.plan.by_tile.values())
             if codes and len(per_tile) == 1:
-                scenes += " — {} arquivo(s) por quadrícula".format(per_tile.pop())
+                scenes += " — " + tr("{} file(s) per tile").format(per_tile.pop())
             elif codes:
                 scenes = "; ".join("{}: {}".format(s, k) for s, k in self.plan.by_tile.items())
             self.tile_list.setText(scenes)
@@ -475,35 +479,35 @@ class DownloadDialog(QDialog):
 
         missing = []
         if self.selection is None:
-            missing.append("desenhe a área no mapa")
+            missing.append(tr("draw the area on the map"))
         elif not self.tiles:
-            missing.append("selecione uma área que cubra quadrículas TOPODATA")
+            missing.append(tr("select an area that covers TOPODATA tiles"))
         if not codes:
-            missing.append("marque ao menos um produto")
-            self.product_msg.setText("• Nenhum produto marcado.")
+            missing.append(tr("check at least one product"))
+            self.product_msg.setText("• " + tr("No product checked."))
         else:
-            self.product_msg.setText("{} de {} produtos marcados.".format(len(codes),
-                                                                          len(C.PRODUCTS)))
+            self.product_msg.setText(tr("{} of {} products checked.").format(len(codes),
+                                                                             len(C.PRODUCTS)))
         if not ok_folder:
-            missing.append("escolha uma pasta de destino válida")
+            missing.append(tr("choose a valid destination folder"))
 
         self._fill_summary()
-        self.download_button.setText("Baixar {} arquivo(s)".format(len(self.plan))
-                                     if len(self.plan) else "Baixar")
+        self.download_button.setText(tr("Download {} file(s)").format(len(self.plan))
+                                     if len(self.plan) else tr("Download"))
 
         if self.selection is None and not self.tiles:
-            self._set_state(WAITING, "Desenhe um retângulo no mapa (clique e arraste) para "
-                            "escolher a área.")
+            self._set_state(WAITING, tr("Draw a rectangle on the map (click and drag) to "
+                                        "choose the area."))
         elif not self.tiles:
-            self._set_state(NO_TILES, "A área não cobre nenhuma folha da grade TOPODATA "
-                            "(cobertura: território brasileiro). Use “Refazer seleção no "
-                            "mapa”.")
+            self._set_state(NO_TILES, tr("The area does not cover any tile of the TOPODATA "
+                                         "grid (coverage: Brazilian territory). Use “Select "
+                                         "again on the map”."))
         elif missing:
-            self._set_state(INCOMPLETE, "Para continuar: " + "; ".join(missing) + ".")
+            self._set_state(INCOMPLETE, tr("To continue: {}.").format("; ".join(missing)))
         else:
             rejected = ""
             if self.plan.rejected:
-                rejected = "Folhas ignoradas por URL fora do padrão: {}.".format(
+                rejected = tr("Tiles skipped because of a non-standard URL: {}.").format(
                     ", ".join(s for s, _ in self.plan.rejected))
             self._set_state(READY, rejected,
                             "\n".join(m for _, m in self.plan.rejected))
@@ -517,13 +521,13 @@ class DownloadDialog(QDialog):
         for code, count in plan.by_product.items():
             r = t.rowCount()
             t.insertRow(r)
-            t.setItem(r, 0, _item("{} ({})".format(C.PRODUCT_BY_CODE[code].label, code)))
+            t.setItem(r, 0, _item("{} ({})".format(tr(C.PRODUCT_BY_CODE[code].label), code)))
             t.setItem(r, 1, _item(str(count), True))
             t.setItem(r, 2, _item(self._size_text(summary.product_total(code), code), True))
         if plan.by_product:
             r = t.rowCount()
             t.insertRow(r)
-            total = _item("Total")
+            total = _item(tr("Total"))
             font = total.font()
             font.setBold(True)
             total.setFont(font)
@@ -531,28 +535,28 @@ class DownloadDialog(QDialog):
             t.setItem(r, 1, _item(str(len(plan)), True))
             t.setItem(r, 2, _item(self._size_text(summary.total), True))
 
-        lines = ["Quadrículas consideradas: {}".format(len(plan.tiles) if plan.codes else 0),
-                 "Arquivos previstos: {} (sem duplicatas)".format(len(plan))]
+        lines = [tr("Tiles considered: {}").format(len(plan.tiles) if plan.codes else 0),
+                 tr("Files planned: {} (no duplicates)").format(len(plan))]
         folder = self.folder_path()
         existing = C.existing_files(plan, folder)
         partial = C.partial_files(plan, folder)
         if existing:
             if self.overwrite_check.isChecked():
-                lines.append("{} arquivo(s) já existem na pasta e serão baixados de novo "
-                             "(substituídos só quando o novo estiver completo).".format(
-                                 len(existing)))
+                lines.append(tr("{} file(s) already exist in the folder and will be downloaded "
+                                "again (replaced only when the new one is complete).").format(
+                                    len(existing)))
             else:
-                lines.append("{} arquivo(s) já existem na pasta: serão conferidos pelo tamanho "
-                             "e reutilizados se estiverem completos.".format(len(existing)))
+                lines.append(tr("{} file(s) already exist in the folder: they will be checked by "
+                                "size and reused if complete.").format(len(existing)))
         if partial:
-            lines.append("{} download(s) parcial(is) (.part) serão retomados se o servidor "
-                         "confirmar que o arquivo não mudou.".format(len(partial)))
+            lines.append(tr("{} partial download(s) (.part) will be resumed if the server "
+                            "confirms that the file has not changed.").format(len(partial)))
         self.summary_text.setText("\n".join(lines))
         self.size_method.setText(self._size_method_text(summary))
         self.retry_sizes.setVisible(any(u in self.size_errors for u in plan.urls))
         self.large_msg.setText(
-            "⚠ Download grande: muitos arquivos ou vários gigabytes. Pode levar bastante tempo "
-            "e ocupar muito espaço em disco. Você pode continuar mesmo assim."
+            "⚠ " + tr("Large download: many files or several gigabytes. It may take a long "
+                      "time and use a lot of disk space. You can continue anyway.")
             if C.is_large(plan, summary) else "")
         self.large_msg.setVisible(bool(self.large_msg.text()))
 
@@ -561,29 +565,29 @@ class DownloadDialog(QDialog):
             return C.format_bytes(value)
         urls = [i.url for i in self.plan.items if code is None or i.code == code]
         if any(u in self.pending_probe for u in urls):
-            return "consultando…"
-        return "não disponível"
+            return tr("checking…")
+        return tr("not available")
 
     def _size_method_text(self, summary):
         if not len(self.plan):
             return ""
-        origin = ("Origem do tamanho: informado pelo servidor do INPE para cada arquivo "
-                  "(cabeçalho Content-Length de uma consulta HEAD, sem baixar os dados).")
+        origin = tr("Size source: reported by the INPE server for each file (Content-Length "
+                    "header of a HEAD request, without downloading the data).")
         if summary.complete:
-            return origin + " Total exato dos arquivos atuais do servidor."
+            return origin + " " + tr("Exact total of the current files on the server.")
         pending = sum(1 for u in self.plan.urls if u in self.pending_probe)
         failed = sum(1 for u in self.plan.urls if u in self.size_errors)
         parts = [origin]
         if summary.known_count:
-            parts.append("Conhecido para {} de {} arquivos: pelo menos {}.".format(
+            parts.append(tr("Known for {} of {} files: at least {}.").format(
                 summary.known_count, summary.count, C.format_bytes(summary.known_total)))
         if pending:
-            parts.append("Consultando {} arquivo(s)…".format(pending))
+            parts.append(tr("Checking {} file(s)…").format(pending))
         if failed:
-            parts.append("Tamanho não disponível para {} arquivo(s): a consulta ao servidor "
-                         "falhou. O download pode ser feito mesmo assim.".format(failed))
+            parts.append(tr("Size not available for {} file(s): the server query failed. "
+                            "The download can be done anyway.").format(failed))
         if not pending and not failed and not summary.complete:
-            parts.append("Tamanho total não disponível.")
+            parts.append(tr("Total size not available."))
         return " ".join(parts)
 
     # ============================================================ tamanhos (HEAD)
@@ -615,7 +619,7 @@ class DownloadDialog(QDialog):
         if error:
             self.size_errors[url] = error
         elif size is None:
-            self.size_errors[url] = "o servidor não informou o tamanho"
+            self.size_errors[url] = tr("the server did not report the size")
         else:
             self.sizes[url] = size
         if not self.is_busy() and self.pages.currentIndex() == 0:
@@ -647,15 +651,15 @@ class DownloadDialog(QDialog):
             self.folder_msg.setText("✖ " + msg)
             self.folder_msg.setVisible(True)
             self.folder.setFocus()
-            self._set_state(INCOMPLETE, "Pasta de destino: " + msg)
+            self._set_state(INCOMPLETE, tr("Destination folder: {}").format(msg))
             return
         summary = C.SizeSummary(self.plan, self.sizes)
         if C.is_large(self.plan, summary):
-            text = ("Serão baixados {} arquivos ({}). Isso pode levar bastante tempo. "
-                    "Deseja continuar?").format(
+            text = tr("{} files will be downloaded ({}). This may take a long time. "
+                      "Do you want to continue?").format(
                         len(self.plan), C.format_bytes(summary.total)
-                        if summary.total is not None else "tamanho total não disponível")
-            if QMessageBox.question(self, "Download grande", text, MB_YES | MB_NO,
+                        if summary.total is not None else tr("total size not available"))
+            if QMessageBox.question(self, tr("Large download"), text, MB_YES | MB_NO,
                                     MB_NO) != MB_YES:
                 return
         self._save_settings()
@@ -675,8 +679,8 @@ class DownloadDialog(QDialog):
                             overwrite=self.overwrite_check.isChecked())
         self._connect_task(task)
         self.task = task
-        self._set_state(DOWNLOADING, "Você pode continuar usando o QGIS. A tarefa também "
-                        "aparece no gerenciador de tarefas (barra de status).")
+        self._set_state(DOWNLOADING, tr("You can keep using QGIS. The task also appears in "
+                                        "the task manager (status bar)."))
         QgsApplication.taskManager().addTask(task)
 
     def _connect_task(self, task):
@@ -696,13 +700,13 @@ class DownloadDialog(QDialog):
             r = t.rowCount()
             t.insertRow(r)
             t.setItem(r, 0, _item(item.filename))
-            t.setItem(r, 1, _item(C.PRODUCT_BY_CODE[item.code].label))
-            t.setItem(r, 2, _item("Pendente"))
+            t.setItem(r, 1, _item(tr(C.PRODUCT_BY_CODE[item.code].label)))
+            t.setItem(r, 2, _item(tr("Pending")))
             t.setItem(r, 3, _item(""))
         self.final_label.setText("")
         self.overall.setRange(0, 1000 if self._by_bytes() else max(1, len(self.run_items)))
         self.overall.setValue(0)
-        self.overall.setFormat("%p%" if self._by_bytes() else "%v de %m arquivos")
+        self.overall.setFormat("%p%" if self._by_bytes() else tr("%v of %m files"))
         self._update_overall()
         self.file_label.setText("—")
         self.file_bar.setRange(0, 1000)
@@ -718,40 +722,40 @@ class DownloadDialog(QDialog):
             total = sum(self.sizes[i.url] for i in self.run_items)
             value = self._bytes_done + self._current_bytes
             self.overall.setValue(int(1000 * value / total) if total else 0)
-            self.overall_label.setText("{} de {} arquivos concluídos — {} de {}".format(
+            self.overall_label.setText(tr("{} of {} files completed — {} of {}").format(
                 done, n, C.format_bytes(value), C.format_bytes(total)))
         else:
             self.overall.setValue(done)
             self.overall_label.setText(
-                "{} de {} arquivos processados. Progresso por arquivos: o tamanho total não "
-                "está disponível.".format(done, n))
+                tr("{} of {} files processed. Progress by files: the total size is not "
+                   "available.").format(done, n))
 
     def _file_started(self, i):
         item = self.run_items[i]
         self._current_bytes = 0
-        self.run_table.item(i, 2).setText("Baixando…")
+        self.run_table.item(i, 2).setText(tr("Downloading…"))
         self.run_table.scrollToItem(self.run_table.item(i, 0))
-        self.file_label.setText("{} — {} ({} de {})".format(
-            item.filename, C.PRODUCT_BY_CODE[item.code].label, i + 1, len(self.run_items)))
+        self.file_label.setText(tr("{} — {} ({} of {})").format(
+            item.filename, tr(C.PRODUCT_BY_CODE[item.code].label), i + 1, len(self.run_items)))
         self.file_bar.setValue(0)
         self.file_bar.setVisible(True)
 
     def _file_progress(self, i, received, total):
         item = self.run_items[i]
         self._current_bytes = received or 0
-        base = "{} — {} ({} de {})".format(item.filename, C.PRODUCT_BY_CODE[item.code].label,
-                                           i + 1, len(self.run_items))
+        base = tr("{} — {} ({} of {})").format(
+            item.filename, tr(C.PRODUCT_BY_CODE[item.code].label), i + 1, len(self.run_items))
         if total:
             self.file_bar.setVisible(True)
             self.file_bar.setValue(int(1000 * received / total))
-            self.file_bar.setFormat("{} de {}".format(C.format_bytes(received),
-                                                      C.format_bytes(total)))
+            self.file_bar.setFormat(tr("{} of {}").format(C.format_bytes(received),
+                                                          C.format_bytes(total)))
             self.file_label.setText(base)
         else:
             self.file_bar.setVisible(False)
-            self.file_label.setText(base + " — {} recebidos; percentual do arquivo não "
-                                    "disponível (o servidor não informou o tamanho).".format(
-                                        C.format_bytes(received)))
+            self.file_label.setText(base + " — " + tr(
+                "{} received; file percentage not available (the server did not report the "
+                "size).").format(C.format_bytes(received)))
         self._update_overall()
 
     def _file_finished(self, i, result):
@@ -759,7 +763,7 @@ class DownloadDialog(QDialog):
         self._current_bytes = 0
         if self._by_bytes():
             self._bytes_done += self.sizes[self.run_items[i].url]
-        self.run_table.item(i, 2).setText(D.STATUS_LABELS[result.status])
+        self.run_table.item(i, 2).setText(tr(D.STATUS_LABELS[result.status]))
         msg = self.run_table.item(i, 3)
         msg.setText(result.message)
         msg.setToolTip(result.detail or result.message)
@@ -769,8 +773,8 @@ class DownloadDialog(QDialog):
         if self.task is not None and self.state == DOWNLOADING:
             self.cancel_requested = True
             self.task.cancel()
-            self._set_state(CANCELING, "Arquivos já concluídos não são alterados; o arquivo "
-                            "em andamento fica como parcial (.part) para retomada.")
+            self._set_state(CANCELING, tr("Files already completed are not changed; the file "
+                                          "in progress is kept as partial (.part) to resume."))
 
     def _ok_paths(self):
         return [r.path for r in self.results if r is not None and r.ok]
@@ -784,23 +788,23 @@ class DownloadDialog(QDialog):
                 counts[r.status] += 1
         n = len(self.run_items)
         available = counts[D.DONE] + counts[D.EXISTING]
-        lines = ["{} de {} arquivos disponíveis na pasta ({} baixados, {} já existiam).".format(
-            available, n, counts[D.DONE], counts[D.EXISTING])]
+        lines = [tr("{} of {} files available in the folder ({} downloaded, {} already "
+                    "existed).").format(available, n, counts[D.DONE], counts[D.EXISTING])]
         if counts[D.FAILED]:
-            lines.append("{} falharam — veja a coluna Mensagem e os detalhes técnicos.".format(
-                counts[D.FAILED]))
+            lines.append(tr("{} failed — see the Message column and the technical "
+                            "details.").format(counts[D.FAILED]))
         if counts[D.CANCELED]:
-            lines.append("{} cancelados ou não iniciados.".format(counts[D.CANCELED]))
+            lines.append(tr("{} canceled or not started.").format(counts[D.CANCELED]))
         parts = [r for r in self.results if r is not None and not r.ok
                  and os.path.exists(r.path + C.PART_SUFFIX)]
         if parts:
-            lines.append("{} parcial(is) (.part) mantidos: baixe de novo para retomar.".format(
-                len(parts)))
-        lines.append("Pasta: {}".format(self.run_folder))
+            lines.append(tr("{} partial file(s) (.part) kept: download again to "
+                            "resume.").format(len(parts)))
+        lines.append(tr("Folder: {}").format(self.run_folder))
 
         if not ok:
             state = PARTIAL if available else ERROR
-            detail = "A tarefa de download foi interrompida por um erro interno."
+            detail = tr("The download task was interrupted by an internal error.")
         elif available == n:
             state, detail = DONE, ""
         elif self.cancel_requested:
@@ -829,14 +833,14 @@ class DownloadDialog(QDialog):
         for path, reason in failed:
             i = rows.get(path)
             if i is not None:
-                self.run_table.item(i, 2).setText(D.STATUS_LABELS[self.results[i].status] +
-                                                  " — não carregado")
+                self.run_table.item(i, 2).setText(tr(D.STATUS_LABELS[self.results[i].status]) +
+                                                  " — " + tr("not loaded"))
                 self.run_table.item(i, 3).setText(reason)
-        text = "Camadas carregadas no QGIS: {}.".format(len(added))
+        text = tr("Layers loaded into QGIS: {}.").format(len(added))
         if skipped:
-            text += " Já estavam no projeto (não duplicadas): {}.".format(len(skipped))
+            text += " " + tr("Already in the project (not duplicated): {}.").format(len(skipped))
         if failed:
-            text += " Não carregadas: {} (motivo na tabela).".format(len(failed))
+            text += " " + tr("Not loaded: {} (reason in the table).").format(len(failed))
         self.final_label.setText((self.final_label.text() + "\n" + text).strip())
         self.load_button.setEnabled(any(p not in self.loaded for p in self._ok_paths()))
         return added, skipped, failed
@@ -855,12 +859,12 @@ class DownloadDialog(QDialog):
         """Relatório técnico (texto) de todos os arquivos da execução."""
         out = []
         for item, r in zip(self.run_items, self.results):
-            status = D.STATUS_LABELS[r.status] if r else "Pendente"
+            status = tr(D.STATUS_LABELS[r.status]) if r else tr("Pending")
             out.append("{} [{}] {}".format(item.filename, status, item.url))
             if r is not None:
                 out.append("    " + r.message)
                 if r.detail:
-                    out.append("    detalhe: " + r.detail)
+                    out.append("    " + tr("detail:") + " " + r.detail)
         return "\n".join(out)
 
     def _copy_details(self):
@@ -873,10 +877,10 @@ class DownloadDialog(QDialog):
         if self.state != DOWNLOADING or self._shutting_down:
             return True
         answer = QMessageBox.question(
-            self, "Download em andamento",
-            "Há um download em andamento. Deseja cancelá-lo e fechar a janela?\n\n"
-            "Arquivos já concluídos são mantidos; o arquivo em andamento fica como "
-            "parcial (.part) para retomar depois.", MB_YES | MB_NO, MB_NO)
+            self, tr("Download in progress"),
+            tr("A download is in progress. Do you want to cancel it and close the window?\n\n"
+               "Files already completed are kept; the file in progress is kept as partial "
+               "(.part) to resume later."), MB_YES | MB_NO, MB_NO)
         if answer != MB_YES:
             return False
         self.cancel_download()

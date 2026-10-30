@@ -1,12 +1,15 @@
 """
 Gera dist/topodata_downloader-<versão>.zip, pronto para "Instalar a partir de ZIP" no QGIS.
 
-    python scripts/make_zip.py
+    python scripts/make_zip.py            # compila as traduções (precisa do lrelease) e gera o ZIP
+    python scripts/make_zip.py --no-i18n  # gera o ZIP com os .qm já presentes no repositório
 
 Funciona no Windows, macOS e Linux (não exige make).
 """
 import configparser
 import os
+import subprocess
+import sys
 import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -16,6 +19,9 @@ EXCLUDE_EXT = (".pyc", ".pyo", ".zip")
 
 
 def main():
+    if "--no-i18n" not in sys.argv:
+        subprocess.run([sys.executable, os.path.join(ROOT, "scripts", "build_translations.py")],
+                       check=True)
     meta = configparser.ConfigParser()
     meta.read(os.path.join(ROOT, PLUGIN, "metadata.txt"), encoding="utf-8")
     version = meta["general"]["version"]

@@ -9,10 +9,11 @@ import pytest
 
 from qgis_env import APP  # noqa: F401  (QGIS headless com perfil isolado)
 from qgis.core import (QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsPointXY,
-                       QgsProject, QgsRectangle)
+                       QgsProject, QgsRectangle, QgsSettings)
 from qgis.gui import QgsMapCanvas, QgsMapToolPan, QgsMessageBar
 from qgis.PyQt.QtWidgets import QMainWindow
 
+from topodata_downloader import catalog as C
 from topodata_downloader import classFactory
 from topodata_downloader import dialog as G
 
@@ -48,8 +49,16 @@ class FakeIface:
         self.menu.remove((menu, action))
 
 
+def set_locale(code):
+    """Idioma da interface do QGIS (Configurações > Opções > Geral) no perfil de teste."""
+    s = QgsSettings()
+    s.setValue("locale/overrideFlag", True)
+    s.setValue("locale/userLocale", code)
+
+
 @pytest.fixture
 def plugin():
+    set_locale("en_US")
     iface = FakeIface()
     pan = QgsMapToolPan(iface.canvas)
     iface.canvas.setMapTool(pan)
@@ -82,7 +91,7 @@ def test_selection_opens_dialog_in_wgs84_and_restores_tool(plugin):
     assert dlg is not None and dlg.isVisible()
     assert iface.canvas.mapTool() is pan                     # ferramenta anterior de volta
     assert [t.scene for t in dlg.tiles] == ["06S36_", "06S375", "07S36_", "07S375"]
-    assert dlg.west.text().startswith("-36,4") and dlg.north.text().startswith("-6,6")
+    assert dlg.west.text().startswith("-36.4") and dlg.north.text().startswith("-6.6")
     assert dlg.state == G.INCOMPLETE                         # falta produto e pasta
     assert len(dlg.plan) == 0 and dlg.probe_task is None     # nada consultado na rede
     assert p.band is not None
@@ -109,7 +118,7 @@ def test_reselect_keeps_configuration(plugin, tmp_path):
 def test_invalid_click_shows_message(plugin):
     p, iface, pan = plugin
     p.action.trigger()
-    p.tool.invalid.emit("Retângulo muito pequeno")
+    p.tool.invalid.emit("Rectangle too small")
     assert iface.canvas.mapTool() is p.tool and p.dialog is None
 
 
@@ -122,3 +131,21 @@ def test_unload_removes_everything():
     p.unload()
     assert iface.toolbar == [] and iface.menu == []
     assert p.dialog is None and p.tool is None and p.band is None
+
+
+def test_translation_follows_qgis_locale():
+    """pt_BR: textos e vírgula decimal traduzidos; ao descarregar, volta ao inglês."""
+    set_locale("pt_BR")
+    p = classFactory(FakeIface())
+    try:
+        p.initGui()
+        assert p.action.text() == "Baixar dados TOPODATA por área"
+        assert C.format_degrees(-36.4) == "-36,40000°"
+    finally:
+        p.unload()
+        set_locale("en_US")
+    assert C.format_degrees(-36.4) == "-36.40000°"
+    p = classFactory(FakeIface())
+    p.initGui()
+    assert p.action.text() == "Download TOPODATA data by area"
+    p.unload()

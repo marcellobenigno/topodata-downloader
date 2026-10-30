@@ -174,7 +174,7 @@ def test_grid_errors(tmp_path):
         "geometry": {"type": "Polygon", "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 0]]]}}]}))
     with pytest.raises(GridError) as err:
         TopodataGrid(str(bad))
-    assert "campos" in err.value.message
+    assert "fields" in err.value.message
     junk = tmp_path / "lixo.geojson"
     junk.write_text("isto não é geojson")
     with pytest.raises(GridError):
@@ -287,14 +287,14 @@ def test_dialog_counts_and_sizes(setup):
     assert dlg.state == G.READY
     assert len(dlg.plan) == 4 and dict(dlg.plan.by_product) == {"ZN": 2, "SA": 2}
     assert dlg.tile_count.text() == "2"
-    assert "2 arquivo(s) por quadrícula" in dlg.tile_list.text()
-    assert dlg.download_button.text() == "Baixar 4 arquivo(s)" and dlg.download_button.isEnabled()
+    assert "2 file(s) per tile" in dlg.tile_list.text()
+    assert dlg.download_button.text() == "Download 4 file(s)" and dlg.download_button.isEnabled()
     t = dlg.summary_table
     assert [t.item(r, 1).text() for r in range(t.rowCount())] == ["2", "2", "4"]
     assert wait_until(lambda: dlg.probe_task is None and len(dlg.sizes) == 4)
-    assert t.item(t.rowCount() - 1, 2).text() != "não disponível"
+    assert t.item(t.rowCount() - 1, 2).text() != "not available"
     assert "Content-Length" in dlg.size_method.text()
-    assert "Total exato" in dlg.size_method.text()
+    assert "Exact total" in dlg.size_method.text()
     dlg.shutdown()
 
 
@@ -307,10 +307,10 @@ def test_dialog_size_not_available(setup, server):
     select(dlg, -36.4, -7.5, -35.6, -7.2)
     assert wait_until(lambda: dlg.probe_task is None and len(dlg.size_errors) == 2)
     t = dlg.summary_table
-    assert t.item(t.rowCount() - 1, 2).text() == "não disponível"     # total
-    assert t.item(1, 2).text() == "não disponível"                     # SA
-    assert t.item(0, 2).text() != "não disponível"                     # ZN conhecido
-    assert "pelo menos" in dlg.size_method.text()
+    assert t.item(t.rowCount() - 1, 2).text() == "not available"     # total
+    assert t.item(1, 2).text() == "not available"                     # SA
+    assert t.item(0, 2).text() != "not available"                     # ZN conhecido
+    assert "at least" in dlg.size_method.text()
     assert dlg.retry_sizes.isVisible() or not dlg.isVisible()
     dlg.shutdown()
 
@@ -320,7 +320,7 @@ def test_dialog_validation_states(setup, tmp_path):
     dlg = make_dialog(grid, project, "", codes=())
     select(dlg, -36.4, -7.5, -35.6, -7.2)
     assert dlg.state == G.INCOMPLETE
-    assert "produto" in dlg.status_detail.text() and "pasta" in dlg.status_detail.text()
+    assert "product" in dlg.status_detail.text() and "folder" in dlg.status_detail.text()
     assert not dlg.download_button.isEnabled()
     dlg.select_all.click()
     assert len(dlg.checked_codes()) == 16
@@ -330,7 +330,7 @@ def test_dialog_validation_states(setup, tmp_path):
     f = tmp_path / "um_arquivo.txt"
     f.write_text("x")
     dlg.folder.setFilePath(str(f))
-    assert dlg.state == G.INCOMPLETE and "arquivo" in dlg.folder_msg.text()
+    assert dlg.state == G.INCOMPLETE and "file" in dlg.folder_msg.text()
     dlg.folder.setFilePath(dest)
     assert dlg.state == G.READY
     select(dlg, -30, -20, -29, -19)                              # sem folhas
@@ -342,7 +342,7 @@ def test_dialog_validation_states(setup, tmp_path):
 
 def test_dialog_grid_error_is_reported():
     def broken():
-        raise GridError("Não foi possível abrir a grade TOPODATA.", "detalhe técnico X")
+        raise GridError("Could not open the TOPODATA grid.", "detalhe técnico X")
     dlg = G.DownloadDialog(broken, None, QgsProject())
     dlg.set_selection(QgsRectangle(-36.4, -7.5, -35.6, -7.2), WGS84)
     assert dlg.state == G.ERROR
@@ -383,14 +383,14 @@ def test_dialog_download_load_and_responsive_ui(setup, server):
     for lyr in layers:
         assert lyr.width() == 256 and lyr.height() == 256
         assert lyr.extent().width() == pytest.approx(1.5)
-    assert "Concluído com sucesso" in dlg.status.text()
+    assert "Completed successfully" in dlg.status.text()
     # carregar de novo não duplica
     assert dlg.load_results() is None
     added, skipped, failed = add_rasters([r.path for r in dlg.results], project)
     assert added == [] and len(skipped) == 4 and failed == []
     # segunda execução: arquivos existentes verificados e reutilizados
     dlg.back_to_config()
-    assert "já existem na pasta" in dlg.summary_text.text()
+    assert "already exist in the folder" in dlg.summary_text.text()
     gets_before = len([x for x in server.log if x[0] == "GET"])
     dlg.start_download()
     assert wait_until(lambda: dlg.task is None, 60)
@@ -408,13 +408,13 @@ def test_dialog_partial_failure_summary(setup, server):
     dlg.start_download()
     assert wait_until(lambda: dlg.task is None, 60)
     assert dlg.state == G.PARTIAL
-    assert "Concluído parcialmente" in dlg.status.text()
-    assert "sucesso" not in dlg.status.text()
-    assert "3 de 4 arquivos disponíveis" in dlg.final_label.text()
-    assert "1 falharam" in dlg.final_label.text()
+    assert "Partially completed" in dlg.status.text()
+    assert "successfully" not in dlg.status.text()
+    assert "3 of 4 files available" in dlg.final_label.text()
+    assert "1 failed" in dlg.final_label.text()
     failed = [r for r in dlg.results if r.status == D.FAILED]
     assert len(failed) == 1 and "404" in failed[0].message
-    assert "07S375SA.tif [Falhou]" in dlg.details.toPlainText()
+    assert "07S375SA.tif [Failed]" in dlg.details.toPlainText()
     assert not os.path.exists(os.path.join(dest, "07S375SA.tif"))
     dlg.shutdown()
 
@@ -437,12 +437,12 @@ def test_dialog_cancel(setup, server):
     statuses = [r.status for r in dlg.results]
     assert statuses[0] == D.DONE and statuses[1] == D.CANCELED
     assert statuses[2:] == [D.CANCELED, D.CANCELED]
-    assert "Concluído" not in dlg.status.text()
+    assert "Completed" not in dlg.status.text()
     with open(os.path.join(dest, "07S36_ZN.tif"), "rb") as f:
         assert f.read()[:4] == b"II*\x00"
     assert not os.path.exists(os.path.join(dest, "07S375ZN.tif"))
     assert os.path.exists(os.path.join(dest, "07S375ZN.tif.part"))
-    assert "parcial" in dlg.final_label.text()
+    assert "partial" in dlg.final_label.text()
     dlg.shutdown()
 
 
@@ -459,7 +459,7 @@ def test_loader_reports_unreadable_and_missing(tmp_path):
     assert [p for p, _ in failed] == [str(bad), str(tmp_path / "x.tif")]
     assert all(reason for _, reason in failed)
     (layer,) = project.mapLayers().values()
-    assert layer.name() == "07S36_ZN — Altitude"
+    assert layer.name() == "07S36_ZN — Elevation"
     assert layer.source() == str(good)
 
 
@@ -476,13 +476,13 @@ def test_classified_products_get_class_colors(tmp_path):
     zn.write_bytes(geotiff_bytes(-36.0, -7.0))
     add_rasters([str(path), str(zn)], project)
     by_name = {lyr.name(): lyr for lyr in project.mapLayers().values()}
-    sa = by_name["07S36_SA — Decliv. (A)"]
+    sa = by_name["07S36_SA — Slope (A)"]
     assert isinstance(sa.renderer(), QgsPalettedRasterRenderer)
     classes = sa.renderer().classes()
     assert [c.value for c in classes] == [1, 2, 3, 4]
     assert len({c.color.name() for c in classes}) == 4
     assert all(c.color.lightness() > 40 for c in classes)          # nada de quase preto
-    assert not isinstance(by_name["07S36_ZN — Altitude"].renderer(), QgsPalettedRasterRenderer)
+    assert not isinstance(by_name["07S36_ZN — Elevation"].renderer(), QgsPalettedRasterRenderer)
     assert path.read_bytes() == before                               # arquivo intacto
     assert {k: len(v) for k, v in CLASS_COLORS.items()} == {
         "SA": 4, "SB": 7, "SC": 6, "V3": 3, "V5": 5, "H3": 3, "H5": 5, "OC": 8, "FT": 9,
@@ -493,7 +493,7 @@ def test_product_catalog_matches_dialog_list(setup):
     grid, project, dest = setup
     dlg = make_dialog(grid, project, dest)
     labels = [dlg.products.item(i).text() for i in range(dlg.products.count())]
-    assert labels[0] == "Altitude  (ZN)" and len(labels) == len(C.PRODUCTS)
+    assert labels[0] == "Elevation  (ZN)" and len(labels) == len(C.PRODUCTS)
     dlg.shutdown()
 
 
@@ -521,7 +521,7 @@ def test_escape_during_download_asks_before_canceling(setup, server, monkeypatch
     assert dlg.isVisible() and dlg.state == G.DOWNLOADING
     dlg.reject()                                                # Esc, resposta "Sim"
     assert not dlg.isVisible() and dlg.state == G.CANCELING
-    assert asked == ["Download em andamento"] * 2
+    assert asked == ["Download in progress"] * 2
     assert wait_until(lambda: dlg.task is None, 30)
     assert dlg.state == G.CANCELED
     dlg.shutdown()

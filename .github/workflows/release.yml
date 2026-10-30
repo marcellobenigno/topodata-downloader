@@ -2,7 +2,8 @@ name: Release
 
 # Envie uma tag como 0.1.0 (o mesmo número de `version=` em metadata.txt) para:
 #   1. conferir a versão e rodar os testes sem QGIS;
-#   2. gerar o ZIP do plugin (scripts/make_zip.py);
+#   2. conferir e compilar as traduções (translations/*.json -> .qm) e gerar o ZIP do plugin
+#      (scripts/make_zip.py);
 #   3. criar a release no GitHub com as notas do CHANGELOG.md e o ZIP anexado;
 #   4. publicar o ZIP no plugins.qgis.org com o token do plugin (secret QGIS_TOKEN, em
 #      Settings > Secrets and variables > Actions). Sem o secret, esse passo é ignorado.
@@ -15,12 +16,14 @@ permissions:
 
 jobs:
   release:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04         # fixado: imagens mais novas podem não ter o lrelease do Qt5
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+      - name: Instalar o lrelease (Qt Linguist)
+        run: sudo apt-get update -q && sudo apt-get install -y -q qttools5-dev-tools
       - name: Conferir se a tag é a versão do metadata.txt
         run: |
           grep -q "^version=${GITHUB_REF_NAME}$" topodata_downloader/metadata.txt \
@@ -29,7 +32,7 @@ jobs:
         run: |
           pip install pytest
           python -m pytest -q tests/test_core.py
-      - name: Gerar o ZIP
+      - name: Gerar o ZIP (traduções completas e compiladas)
         run: python scripts/make_zip.py
       - name: Criar a release (notas do CHANGELOG.md + ZIP)
         env:

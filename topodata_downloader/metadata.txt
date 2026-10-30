@@ -5,16 +5,17 @@ supportsQt6=yes
 description=Download TOPODATA (INPE, Brazil) terrain products for the 1° × 1.5° tiles that intersect a rectangle drawn on the map.
 about=Draw a rectangle on the map: the plugin finds the TOPODATA tiles (1° × 1.5°) that intersect the area, shows how many files and bytes will be downloaded per product, and downloads the original INPE GeoTIFFs (elevation, slope and slope classes, vertical and horizontal curvature, aspect, landform, shaded relief, ridges and drainage lines).
     Background download, cancellable, with validated resume of partial files and limited retries on temporary failures. Optionally loads each file as a separate raster layer. No mosaicking, clipping or reprojection is done.
-    The user interface is in Brazilian Portuguese. Data: TOPODATA, Instituto Nacional de Pesquisas Espaciais (INPE), https://data.inpe.br/dados/topodata/
+    The user interface is in English, with a Brazilian Portuguese translation that follows the QGIS language. Data: TOPODATA, Instituto Nacional de Pesquisas Espaciais (INPE), https://data.inpe.br/dados/topodata/
     
     Português: Desenhe um retângulo no mapa: o plugin encontra as folhas TOPODATA (1° × 1,5°) que intersectam a área, mostra quantos arquivos e quantos bytes serão baixados por produto e baixa os GeoTIFF originais do INPE (altitude, declividade e classes, curvaturas vertical e horizontal, orientação, forma de terreno, relevo sombreado, divisores e talvegues).
     Download em segundo plano, cancelável, com retomada validada de parciais e repetição limitada de falhas temporárias. Opcionalmente carrega cada arquivo como camada raster separada. Nenhum mosaico, recorte ou reprojeção é feito.
-    Interface em português do Brasil. Dados: TOPODATA, Instituto Nacional de Pesquisas Espaciais (INPE), https://data.inpe.br/dados/topodata/
-version=0.1.2
+    Interface em inglês, com tradução para o português do Brasil conforme o idioma do QGIS. Dados: TOPODATA, Instituto Nacional de Pesquisas Espaciais (INPE), https://data.inpe.br/dados/topodata/
+version=0.2.0
 author=Marcello Benigno Borges de Barros Filho
 email=benigno.marcello@gmail.com
 
-changelog=0.1.2 - Documentação em português e inglês (documentation in Portuguese and English).
+changelog=0.2.0 - Interface em inglês, com tradução para o português do Brasil (English user interface, Brazilian Portuguese translation).
+    0.1.2 - Documentação em português e inglês (documentation in Portuguese and English).
     0.1.1 - Descrição em inglês nos metadados (English description).
     0.1.0 - Versão inicial de desenvolvimento.
 

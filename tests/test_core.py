@@ -15,6 +15,7 @@ import pytest
 from fake_server import Resource, tiff_bytes, write
 from topodata_downloader import catalog as C
 from topodata_downloader import downloader as D
+from topodata_downloader import translation
 
 GRID = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                     "topodata_downloader", "data", "grade_topodata.geojson")
@@ -38,8 +39,8 @@ def test_products_match_inpe_selector():
     assert [p.code for p in C.PRODUCTS] == [
         "ZN", "SN", "SA", "SB", "SC", "VN", "V3", "V5", "HN", "H3", "H5", "ON", "OC", "FT",
         "RS", "DD"]
-    assert [p.label for p in C.PRODUCTS][:3] == ["Altitude", "Declividade", "Decliv. (A)"]
-    assert C.PRODUCT_BY_CODE["DD"].label == "Divisores e talvegues"
+    assert [p.label for p in C.PRODUCTS][:3] == ["Elevation", "Slope", "Slope (A)"]
+    assert C.PRODUCT_BY_CODE["DD"].label == "Ridges and drainage lines"
 
 
 def test_product_url_follows_inpe_examples():
@@ -110,17 +111,27 @@ def test_size_summary_without_metadata_is_not_invented():
     plan = C.Plan([tile("07S36_"), tile("07S375")], ["ZN", "SA"])
     s = C.SizeSummary(plan, {})
     assert s.total is None and s.product_total("ZN") is None
-    assert C.format_bytes(s.total) == "não disponível"
+    assert C.format_bytes(s.total) == "not available"
     partial = C.SizeSummary(plan, {plan.urls[0]: 500})
     assert partial.total is None and partial.known_total == 500 and partial.known_count == 1
     assert partial.product_total("ZN") is None
 
 
-def test_format_bytes_ptbr():
+def test_format_bytes_and_degrees():
     assert C.format_bytes(0) == "0 bytes"
-    assert C.format_bytes(80775987) == "80,8 MB"
-    assert C.format_bytes(2_500_000_000) == "2,5 GB"
-    assert C.format_degrees(-35.123456) == "-35,12346°"
+    assert C.format_bytes(80775987) == "80.8 MB"
+    assert C.format_bytes(2_500_000_000) == "2.5 GB"
+    assert C.format_degrees(-35.123456) == "-35.12346°"
+
+
+def test_decimal_comma_follows_the_translation():
+    translation.set_language("pt_BR")
+    try:
+        assert C.format_bytes(80775987) == "80,8 MB"
+        assert C.format_degrees(-35.123456) == "-35,12346°"
+    finally:
+        translation.set_language("")
+    assert C.format_bytes(80775987) == "80.8 MB"
 
 
 def test_large_download_warning():
@@ -140,7 +151,7 @@ def test_destination_empty_relative_or_file(tmp_path):
     f = tmp_path / "arquivo.txt"
     f.write_text("x")
     ok, msg = C.check_destination(str(f))
-    assert not ok and "arquivo" in msg
+    assert not ok and "file" in msg
 
 
 def test_destination_is_created(tmp_path):
@@ -158,7 +169,7 @@ def test_destination_without_write_permission(tmp_path):
     ro.chmod(stat.S_IRUSR | stat.S_IXUSR)
     try:
         ok, msg = C.check_destination(str(ro))
-        assert not ok and "permissão" in msg
+        assert not ok and "permission" in msg
         ok, msg = C.check_destination(str(ro / "filha"))
         assert not ok
     finally:
@@ -215,7 +226,7 @@ def test_retries_are_limited(server, tmp_path):
     url = server.add("/x/c.tif", Resource(tiff_bytes(10_000), fail_first=99, fail_status=500))
     dest = str(tmp_path / "c.tif")
     r = fast(max_attempts=3).download(url, dest)
-    assert r.status == D.FAILED and r.attempts == 3 and "3 tentativas" in r.message
+    assert r.status == D.FAILED and r.attempts == 3 and "3 attempts" in r.message
     assert len(server.gets("/x/c.tif")) == 3
     assert not os.path.exists(dest)
 
@@ -352,7 +363,7 @@ def test_existing_file_with_wrong_size_is_replaced(server, tmp_path):
     dest = str(tmp_path / "m.tif")
     write(dest, data[:1000])
     r = fast().download(url, dest)
-    assert r.status == D.DONE and "Substituído" in r.message
+    assert r.status == D.DONE and "Replaced" in r.message
     with open(dest, "rb") as f:
         assert f.read() == data
 
@@ -363,7 +374,7 @@ def test_existing_file_is_kept_when_replacement_fails(server, tmp_path):
     old = tiff_bytes(1000, seed=3)
     write(dest, old)
     r = fast(max_attempts=2).download(url, dest)
-    assert r.status == D.FAILED and "não foi alterado" in r.message
+    assert r.status == D.FAILED and "was not changed" in r.message
     with open(dest, "rb") as f:
         assert f.read() == old
 
@@ -398,7 +409,7 @@ def test_missing_content_length_is_accepted_but_flagged(server, tmp_path):
     data = tiff_bytes(20_000)
     url = server.add("/x/r.tif", Resource(data, content_length=False))
     r = fast().download(url, str(tmp_path / "r.tif"))
-    assert r.status == D.DONE and "não verificada" in r.message
+    assert r.status == D.DONE and "not verified" in r.message
 
 
 def test_probe_sizes(server):
@@ -415,7 +426,7 @@ def test_probe_sizes(server):
 
 def test_unreachable_server_message(tmp_path):
     r = fast(max_attempts=1).download("http://127.0.0.1:9/x.tif", str(tmp_path / "x.tif"))
-    assert r.status == D.FAILED and "conectar" in r.message and r.detail
+    assert r.status == D.FAILED and "connect" in r.message and r.detail
 
 
 def test_parse_content_range():

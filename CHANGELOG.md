@@ -3,6 +3,16 @@
 O formato segue [Keep a Changelog](https://keepachangelog.com/) e o projeto usa
 [Versionamento Semântico](https://semver.org/).
 
+## 0.2.0 - 2026-10-30
+
+- Interface em inglês (English user interface), como no `osmnx-routing-isochrones`, com
+  tradução para o português do Brasil escolhida conforme o idioma do QGIS
+  (`translations/pt_BR.json` → `topodata_downloader/i18n/*.qm`).
+- Nomes das camadas, mensagens, tarefas e nomes dos produtos também traduzidos; números com
+  vírgula decimal na tradução em português e com ponto em inglês.
+- `scripts/build_translations.py` confere se todos os textos estão traduzidos e compila os
+  `.qm`; `make_zip.py` e o workflow de release compilam as traduções.
+
 ## 0.1.2 - 2026-10-30
 
 - Documentação revisada e publicada em português e em inglês
