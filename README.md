@@ -1,6 +1,6 @@
 # TOPODATA Downloader (plugin QGIS)
 
-📖 **Documentação:** https://marcellobenigno.github.io/topodata-downloader/
+📖 **Documentação:** https://marcellobenigno.github.io/topodata-downloader/pt-br/ · **Documentation (English):** https://marcellobenigno.github.io/topodata-downloader/en/
 
 Baixa, a partir de um **retângulo desenhado no mapa**, os produtos TOPODATA (INPE) das
 quadrículas que **intersectam** a área. Mostra antes quantos arquivos serão baixados (por
