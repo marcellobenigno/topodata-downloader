@@ -3,6 +3,14 @@
 O formato segue [Keep a Changelog](https://keepachangelog.com/) e o projeto usa
 [Versionamento Semântico](https://semver.org/).
 
+## 0.1.2 - 2026-10-30
+
+- Documentação revisada e publicada em português e em inglês
+  (https://marcellobenigno.github.io/topodata-downloader/), com seleção de idioma.
+- O site passa a ficar no branch `gh-pages`; `docs/` deixa de ser versionada no `main`.
+- README com link para a documentação em inglês; nova descrição do autor no site.
+- Sem mudanças no código do plugin.
+
 ## 0.1.1 - 2026-10-28
 
 - Descrição e texto "about" dos metadados em inglês (exigência do plugins.qgis.org),
