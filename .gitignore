@@ -16,3 +16,6 @@ dist/
 .idea/
 .vscode/
 .DS_Store
+
+# Site de documentação: worktree do branch gh-pages (git worktree add docs gh-pages)
+docs/

@@ -177,7 +177,7 @@ OC 1–8, FT 1–9, DD 1–16 + 17–18 (linhas).
 
 ## Documentação (site)
 
-`docs/pt-br/` e `docs/en/` (GitHub Pages; `docs/index.html` escolhe o idioma), no mesmo formato do site do `osmnx-routing-isochrones`.
+Branch `gh-pages` (GitHub Pages), no mesmo formato do site do `osmnx-routing-isochrones`: `pt-br/`, `en/` e `index.html`, que escolhe o idioma. No `main`, `docs/` não é versionada; para editar o site, use o branch como worktree: `git worktree add docs gh-pages`.
 As figuras são feitas pelo próprio plugin num QGIS headless, com dados reais do INPE (precisa
 de internet; perfil do QGIS temporário):
 
@@ -202,7 +202,7 @@ topodata_downloader/        o plugin (esta pasta vai no ZIP)
   data/grade_topodata.geojson
 tests/                      test_core.py (sem QGIS), test_qgis.py e test_plugin.py (QGIS headless)
 scripts/make_zip.py, build_docs_figures.py
-docs/                       site de documentação (GitHub Pages): pt-br/, en/
+docs/                       worktree do branch gh-pages (site de documentação)
 ```
 
 Padrões seguidos do `osmnx-routing-isochrones` (mesmo autor): núcleo em Python puro testável
