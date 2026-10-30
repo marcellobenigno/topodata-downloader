@@ -83,7 +83,7 @@ section { padding: 64px 0; border-bottom: 1px solid var(--line); }
 section h2 { font-size: clamp(1.6rem, 3vw, 2.1rem); margin: 0 0 8px; }
 section .kicker { text-transform: uppercase; letter-spacing: .12em; font-size: .78rem;
   font-weight: 700; margin: 0 0 8px; }
-section > .wrap > p.intro { color: var(--muted); font-size: 1.07rem; max-width: 46em; margin: 0 0 32px; }
+section > .wrap > p.intro { color: var(--muted); font-size: 1.07rem; margin: 0 0 32px; }
 h3 { font-size: 1.25rem; margin: 32px 0 10px; }
 .k-green { color: var(--green); } .k-red { color: var(--red); } .k-blue { color: var(--blue); }
 .k-orange { color: var(--orange); }
